@@ -950,7 +950,7 @@ if st.sidebar.button("🔄 Trocar Agente", key="trocar_agente_global"):
     st.rerun()
 
 # --- SELECTBOX PARA TROCAR AGENTE ACIMA DAS ABAS ---
-st.title("🤖 Agente Social")
+st.title("🤖 Agente BD")
 
 # Carregar agentes disponíveis
 agentes = listar_agentes()
