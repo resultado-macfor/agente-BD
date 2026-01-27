@@ -6680,7 +6680,7 @@ def buscar_fontes_para_otimizacao(conteudo: str, tipo: str, tom: str) -> str:
         
 
 # ========== ABA: OTIMIZAÇÃO DE CONTEÚDO ==========
-with tab_mapping["🚀 Otimização de Conteúdo"]
+with tab_mapping["🚀 Otimização de Conteúdo"]:
     st.header("🚀 Otimização de Conteúdo")
     
     # Inicializar session state
