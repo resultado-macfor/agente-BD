@@ -7389,3 +7389,486 @@ with tab_mapping["📅 Criadora de Calendário"]:
                     st.code("pip install openpyxl")
                 except Exception as e:
                     st.error(f"Erro XLSX: {str(e)}")
+
+# --- ABA: DIÁRIO DE BORDO ---
+if "📓 Diário de Bordo" not in abas_base:
+    abas_base.append("📓 Diário de Bordo")
+    # Atualizar o mapeamento de abas
+    tabs = st.tabs(abas_base)
+    tab_mapping["📓 Diário de Bordo"] = tabs[len(abas_base) - 1]
+
+with tab_mapping["📓 Diário de Bordo"]:
+    st.header("📓 Diário de Bordo - Cliente")
+    
+    if not st.session_state.agente_selecionado:
+        st.warning("⚠️ Selecione um agente primeiro na aba de Chat")
+        st.stop()
+    
+    agente = st.session_state.agente_selecionado
+    st.subheader(f"Diário para: {agente['nome']}")
+    
+    # Carregar comentários atuais do agente
+    comentarios_atuais = agente.get('comments', '')
+    
+    # Layout em abas
+    tab_visualizar, tab_adicionar, tab_relatorio = st.tabs(["👁️ Visualizar", "➕ Adicionar", "📊 Relatório"])
+    
+    # --- TAB: VISUALIZAR DIÁRIO ---
+    with tab_visualizar:
+        if comentarios_atuais:
+            # Exibir com formatação
+            st.markdown("### 📝 Diário Atual do Cliente")
+            
+            # Estatísticas
+            palavras = len(comentarios_atuais.split())
+            caracteres = len(comentarios_atuais)
+            linhas = comentarios_atuais.count('\n') + 1
+            
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            with col_stat1:
+                st.metric("📝 Palavras", palavras)
+            with col_stat2:
+                st.metric("🔤 Caracteres", caracteres)
+            with col_stat3:
+                st.metric("📄 Linhas", linhas)
+            
+            # Área de visualização
+            st.text_area(
+                "Conteúdo do diário:",
+                value=comentarios_atuais,
+                height=400,
+                disabled=True,
+                key="visualizar_diario"
+            )
+            
+            # Botão para exportar
+            st.download_button(
+                "💾 Exportar Diário",
+                data=comentarios_atuais,
+                file_name=f"diario_{agente['nome']}_{datetime.datetime.now().strftime('%Y%m%d')}.txt",
+                mime="text/plain"
+            )
+            
+            # Análise rápida
+            with st.expander("🔍 Análise Rápida", expanded=False):
+                if palavras > 100:
+                    # Contar ocorrências de palavras-chave
+                    palavras_chave = ['problema', 'ajuste', 'melhorar', 'gostei', 'não gostei', 'sugestão', 'importante', 'urgente']
+                    contagens = {}
+                    
+                    texto_lower = comentarios_atuais.lower()
+                    for palavra in palavras_chave:
+                        contagens[palavra] = texto_lower.count(palavra)
+                    
+                    st.write("**Palavras-chave encontradas:**")
+                    for palavra, count in contagens.items():
+                        if count > 0:
+                            st.write(f"- {palavra}: {count} ocorrência(s)")
+                    
+                    if sum(contagens.values()) == 0:
+                        st.info("Nenhuma palavra-chave comum encontrada")
+                else:
+                    st.info("Diário muito curto para análise")
+        
+        else:
+            st.info("📭 O diário está vazio. Adicione conteúdo na aba 'Adicionar'")
+    
+    # --- TAB: ADICIONAR CONTEÚDO ---
+    with tab_adicionar:
+        st.markdown("### 📤 Adicionar ao Diário")
+        
+        # Método de adição
+        metodo_adicional = st.radio(
+            "Como deseja adicionar conteúdo:",
+            ["📝 Texto Manual", "📎 Upload de Documento", "✂️ Extrair de Conversa"],
+            horizontal=True
+        )
+        
+        if metodo_adicional == "📝 Texto Manual":
+            st.markdown("#### ✍️ Adicionar Notas Manuais")
+            
+            data_registro = st.date_input("Data do registro:", value=datetime.datetime.now())
+            titulo_registro = st.text_input("Título/Contexto:", placeholder="Ex: Reunião de ajuste, Feedback por email, etc.")
+            
+            novo_conteudo = st.text_area(
+                "Conteúdo:",
+                height=200,
+                placeholder="""Exemplo:
+                
+                Reunião com cliente em 15/03:
+                - Cliente pediu tom mais técnico nos parágrafos 3-5
+                - Solicitaram inclusão de mais dados de pesquisa
+                - Aprovaram mudança na estrutura de tópicos
+                - Próxima revisão: 22/03""",
+                help="Descreva o feedback, observações ou decisões"
+            )
+            
+            if st.button("💾 Salvar no Diário", type="primary", key="salvar_manual"):
+                if novo_conteudo.strip():
+                    # Formatar entrada
+                    entrada_formatada = f"\n\n--- {titulo_registro if titulo_registro else 'Nova Entrada'} ({data_registro.strftime('%d/%m/%Y')}) ---\n{novo_conteudo}"
+                    
+                    # Atualizar comentários
+                    novos_comentarios = comentarios_atuais + entrada_formatada
+                    
+                    # Atualizar agente no banco
+                    atualizar_agente(
+                        agente['_id'],
+                        agente['nome'],
+                        agente.get('system_prompt', ''),
+                        agente.get('base_conhecimento', ''),
+                        novos_comentarios,
+                        agente.get('planejamento', ''),
+                        agente.get('categoria', 'Social'),
+                        agente.get('squad_permitido', 'Todos'),
+                        agente.get('agente_mae_id'),
+                        agente.get('herdar_elementos', [])
+                    )
+                    
+                    # Atualizar session state
+                    st.session_state.agente_selecionado = obter_agente_com_heranca(agente['_id'])
+                    
+                    st.success("✅ Conteúdo adicionado ao diário!")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    st.warning("Digite algum conteúdo para salvar")
+        
+        elif metodo_adicional == "📎 Upload de Documento":
+            st.markdown("#### 📎 Carregar Documento")
+            
+            uploaded_file = st.file_uploader(
+                "Selecione um documento (PDF, DOCX, TXT):",
+                type=['pdf', 'docx', 'txt'],
+                key="upload_diario"
+            )
+            
+            if uploaded_file:
+                st.success(f"✅ {uploaded_file.name} carregado")
+                
+                # Extrair texto
+                with st.spinner("Extraindo texto..."):
+                    try:
+                        if uploaded_file.type == "application/pdf":
+                            texto_extraido, _ = extract_text_from_pdf_com_slides(uploaded_file)
+                        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                            texto_extraido = extrair_texto_arquivo(uploaded_file)
+                        elif uploaded_file.type == "text/plain":
+                            texto_extraido = str(uploaded_file.read(), "utf-8")
+                        else:
+                            texto_extraido = f"[Arquivo {uploaded_file.type} não suportado para extração automática]"
+                        
+                        # Mostrar preview
+                        with st.expander("👁️ Preview do Texto Extraído", expanded=False):
+                            st.text_area("", value=texto_extraido[:1000], height=200, disabled=True)
+                        
+                        # Adicionar contexto
+                        st.markdown("#### 📝 Contexto do Documento")
+                        contexto_doc = st.text_input(
+                            "Contexto/Origem:",
+                            placeholder="Ex: Email do cliente, Relatório de reunião, Feedback por escrito"
+                        )
+                        
+                        if st.button("💾 Adicionar Documento ao Diário", type="primary"):
+                            if texto_extraido.strip():
+                                # Formatar entrada
+                                data_atual = datetime.datetime.now().strftime('%d/%m/%Y')
+                                contexto = contexto_doc if contexto_doc else "Documento carregado"
+                                entrada_formatada = f"\n\n--- {contexto} - {uploaded_file.name} ({data_atual}) ---\n{texto_extraido[:10000]}"  # Limitar tamanho
+                                
+                                # Atualizar comentários
+                                novos_comentarios = comentarios_atuais + entrada_formatada
+                                
+                                # Atualizar agente
+                                atualizar_agente(
+                                    agente['_id'],
+                                    agente['nome'],
+                                    agente.get('system_prompt', ''),
+                                    agente.get('base_conhecimento', ''),
+                                    novos_comentarios,
+                                    agente.get('planejamento', ''),
+                                    agente.get('categoria', 'Social'),
+                                    agente.get('squad_permitido', 'Todos'),
+                                    agente.get('agente_mae_id'),
+                                    agente.get('herdar_elementos', [])
+                                )
+                                
+                                # Atualizar session state
+                                st.session_state.agente_selecionado = obter_agente_com_heranca(agente['_id'])
+                                
+                                st.success(f"✅ Documento '{uploaded_file.name}' adicionado ao diário!")
+                                st.rerun()
+                            else:
+                                st.warning("Documento vazio ou não foi possível extrair texto")
+                    
+                    except Exception as e:
+                        st.error(f"❌ Erro ao processar documento: {str(e)}")
+        
+        elif metodo_adicional == "✂️ Extrair de Conversa":
+            st.markdown("#### 💬 Extrair de Histórico de Chat")
+            
+            # Carregar conversas recentes
+            conversas = obter_conversas(agente['_id'], limite=5)
+            
+            if conversas:
+                st.info("Selecione uma conversa para extrair trechos:")
+                
+                for i, conversa in enumerate(conversas):
+                    with st.expander(f"Conversa {i+1} - {conversa.get('data_criacao', 'Data desconhecida')}", expanded=False):
+                        # Mostrar mensagens
+                        mensagens = conversa.get('mensagens', [])
+                        for msg in mensagens[-6:]:  # Últimas 6 mensagens
+                            role = "👤" if msg.get("role") == "user" else "🤖"
+                            st.write(f"{role}: {msg.get('content', '')[:200]}...")
+                        
+                        # Botão para selecionar
+                        if st.button(f"📋 Usar esta conversa", key=f"usar_conversa_{i}"):
+                            # Extrair texto da conversa
+                            texto_conversa = ""
+                            for msg in mensagens:
+                                if msg.get("role") == "user":  # Apenas mensagens do usuário
+                                    texto_conversa += f"Cliente: {msg.get('content', '')}\n"
+                            
+                            if texto_conversa.strip():
+                                # Formatar entrada
+                                data_atual = datetime.datetime.now().strftime('%d/%m/%Y')
+                                entrada_formatada = f"\n\n--- Conversa extraída ({data_atual}) ---\n{texto_conversa}"
+                                
+                                # Atualizar comentários
+                                novos_comentarios = comentarios_atuais + entrada_formatada
+                                
+                                # Atualizar agente
+                                atualizar_agente(
+                                    agente['_id'],
+                                    agente['nome'],
+                                    agente.get('system_prompt', ''),
+                                    agente.get('base_conhecimento', ''),
+                                    novos_comentarios,
+                                    agente.get('planejamento', ''),
+                                    agente.get('categoria', 'Social'),
+                                    agente.get('squad_permitido', 'Todos'),
+                                    agente.get('agente_mae_id'),
+                                    agente.get('herdar_elementos', [])
+                                )
+                                
+                                # Atualizar session state
+                                st.session_state.agente_selecionado = obter_agente_com_heranca(agente['_id'])
+                                
+                                st.success("✅ Conversa adicionada ao diário!")
+                                st.rerun()
+                            else:
+                                st.warning("Nenhuma mensagem do usuário encontrada nesta conversa")
+            else:
+                st.info("Nenhuma conversa recente encontrada")
+    
+    # --- TAB: RELATÓRIO ---
+    with tab_relatorio:
+        st.markdown("### 📊 Relatório de Andamento com Cliente")
+        
+        if not comentarios_atuais or len(comentarios_atuais.strip()) < 50:
+            st.info("📭 Diário muito curto para gerar relatório. Adicione mais conteúdo primeiro.")
+        else:
+            # Configurações do relatório
+            col_config1, col_config2 = st.columns(2)
+            
+            with col_config1:
+                tipo_analise = st.selectbox(
+                    "Tipo de análise:",
+                    ["Análise Completa", "Foco em Oportunidades", "Identificar Problemas", "Evolução do Feedback", "Próximos Passos"],
+                    help="Escolha o tipo de análise desejada"
+                )
+            
+            with col_config2:
+                formato_relatorio = st.selectbox(
+                    "Formato do relatório:",
+                    ["Relatório Executivo", "Lista de Ações", "Análise Detalhada", "Resumo Rápido"]
+                )
+            
+            # Perguntas específicas
+            perguntas_especificas = st.text_area(
+                "Perguntas para análise (opcional):",
+                height=100,
+                placeholder="Ex: \n1. Quais são os principais pontos de atenção?\n2. Há padrões no feedback?\n3. Quais oportunidades de melhoria?",
+                help="Adicione perguntas específicas para direcionar a análise"
+            )
+            
+            if st.button("📈 Gerar Análise do Diário", type="primary", key="gerar_analise_diario"):
+                with st.spinner("🔍 Analisando diário..."):
+                    try:
+                        # Construir prompt para análise
+                        prompt_analise = f"""
+                        ## ANÁLISE DE DIÁRIO DE CLIENTE - RELATÓRIO DE ANDAMENTO
+                        
+                        **AGENTE:** {agente['nome']}
+                        **CATEGORIA:** {agente.get('categoria', 'N/A')}
+                        **TIPO DE ANÁLISE:** {tipo_analise}
+                        **FORMATO:** {formato_relatorio}
+                        
+                        **CONTEÚDO DO DIÁRIO (COMENTÁRIOS DO CLIENTE):**
+                        {comentarios_atuais[:8000]}
+                        
+                        **PERGUNTAS ESPECÍFICAS PARA ANÁLISE:**
+                        {perguntas_especificas if perguntas_especificas else 'Nenhuma pergunta específica fornecida'}
+                        
+                        ## INSTRUÇÕES:
+                        
+                        Analise o diário/comentários do cliente e gere um relatório que identifique:
+                        
+                        1. **PADRÕES E TENDÊNCIAS** no feedback do cliente
+                        2. **OPORTUNIDADES** para melhoria do agente/serviço
+                        3. **RED FLAGS** ou pontos críticos que precisam de atenção imediata
+                        4. **EVOLUÇÃO** do feedback ao longo do tempo
+                        5. **INSIGHTS** valiosos sobre as preferências do cliente
+                        6. **RECOMENDAÇÕES** concretas para próximos passos
+                        
+                        ## FORMATAÇÃO ESPECÍFICA:
+                        
+                        Use esta estrutura EXATA para o relatório:
+                        
+                        # 📊 RELATÓRIO DE ANDAMENTO - {agente['nome']}
+                        **Data da análise:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}
+                        **Tipo:** {tipo_analise}
+                        
+                        ## 🎯 RESUMO EXECUTIVO
+                        [2-3 parágrafos com visão geral]
+                        
+                        ## 📈 OPORTUNIDADES IDENTIFICADAS
+                        [Lista com bullets das principais oportunidades]
+                        
+                        ## ⚠️ RED FLAGS / PONTOS CRÍTICOS
+                        [Lista com bullets dos problemas identificados]
+                        
+                        ## 💡 INSIGHTS E PADRÕES
+                        [Principais descobertas sobre o cliente]
+                        
+                        ## 🚀 PRÓXIMOS PASSOS RECOMENDADOS
+                        [Ações específicas e prioritárias]
+                        
+                        ## 📅 LINHA DO TEMPO SUGERIDA
+                        [Cronograma sugerido para implementação]
+                        
+                        ## 🔍 RESPOSTAS ÀS PERGUNTAS ESPECÍFICAS
+                        {perguntas_especificas if perguntas_especificas else 'Nenhuma pergunta específica fornecida'}
+                        
+                        ---
+                        *Análise gerada automaticamente com base no diário do cliente*
+                        """
+                        
+                        # Gerar análise com Gemini
+                        resposta = modelo_texto.generate_content(prompt_analise)
+                        relatorio_gerado = resposta.text
+                        
+                        # Salvar no session state
+                        st.session_state.ultima_analise_diario = relatorio_gerado
+                        
+                        # Exibir relatório
+                        st.markdown("---")
+                        st.subheader("📋 Relatório de Análise")
+                        st.markdown(relatorio_gerado)
+                        
+                        # Estatísticas
+                        palavras_diario = len(comentarios_atuais.split())
+                        palavras_relatorio = len(relatorio_gerado.split())
+                        
+                        col_stat1, col_stat2, col_stat3 = st.columns(3)
+                        with col_stat1:
+                            st.metric("📚 Palavras do Diário", palavras_diario)
+                        with col_stat2:
+                            st.metric("📝 Palavras do Relatório", palavras_relatorio)
+                        with col_stat3:
+                            st.metric("📊 Taxa de Síntese", f"{(palavras_relatorio/palavras_diario*100):.1f}%" if palavras_diario > 0 else "N/A")
+                        
+                        # Botões de download
+                        col_dl1, col_dl2 = st.columns(2)
+                        
+                        with col_dl1:
+                            st.download_button(
+                                "💾 Baixar Relatório (TXT)",
+                                data=relatorio_gerado,
+                                file_name=f"analise_diario_{agente['nome']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                                mime="text/plain",
+                                key="download_analise"
+                            )
+                        
+                        with col_dl2:
+                            # Extrair ações para CSV
+                            acoes_csv = "Tipo,Ação,Prioridade\n"
+                            
+                            # Extrair oportunidades
+                            if "OPORTUNIDADES IDENTIFICADAS" in relatorio_gerado:
+                                inicio = relatorio_gerado.find("OPORTUNIDADES IDENTIFICADAS")
+                                fim = relatorio_gerado.find("##", inicio + 1)
+                                if fim != -1:
+                                    conteudo = relatorio_gerado[inicio:fim]
+                                    for linha in conteudo.split('\n'):
+                                        if linha.strip().startswith('-') or linha.strip().startswith('•'):
+                                            acao = linha.strip().lstrip('-• ').strip()
+                                            acoes_csv += f"OPORTUNIDADE,\"{acao}\",MÉDIA\n"
+                            
+                            # Extrair próximos passos
+                            if "PRÓXIMOS PASSOS RECOMENDADOS" in relatorio_gerado:
+                                inicio = relatorio_gerado.find("PRÓXIMOS PASSOS RECOMENDADOS")
+                                fim = relatorio_gerado.find("##", inicio + 1)
+                                if fim != -1:
+                                    conteudo = relatorio_gerado[inicio:fim]
+                                    for linha in conteudo.split('\n'):
+                                        if linha.strip().startswith('-') or linha.strip().startswith('•'):
+                                            acao = linha.strip().lstrip('-• ').strip()
+                                            acoes_csv += f"AÇÃO,\"{acao}\",ALTA\n"
+                            
+                            st.download_button(
+                                "📋 Baixar Ações (CSV)",
+                                data=acoes_csv,
+                                file_name=f"acoes_diario_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                                mime="text/csv",
+                                key="download_acoes"
+                            )
+                        
+                        # Sugestão de integração
+                        with st.expander("🔄 Integrar com Agente", expanded=False):
+                            st.info("Use estas sugestões para melhorar o agente:")
+                            
+                            # Botão para aplicar sugestões ao system prompt
+                            if st.button("✨ Aplicar Insights ao Agente"):
+                                try:
+                                    # Extrair insights do relatório
+                                    insights = []
+                                    if "INSIGHTS E PADRÕES" in relatorio_gerado:
+                                        inicio = relatorio_gerado.find("INSIGHTS E PADRÕES")
+                                        fim = relatorio_gerado.find("##", inicio + 1)
+                                        if fim != -1:
+                                            conteudo = relatorio_gerado[inicio:fim]
+                                            for linha in conteudo.split('\n'):
+                                                if linha.strip().startswith('-') or linha.strip().startswith('•'):
+                                                    insights.append(linha.strip().lstrip('-• ').strip())
+                                    
+                                    if insights:
+                                        # Atualizar system prompt com insights
+                                        system_prompt_atual = agente.get('system_prompt', '')
+                                        novos_insights = "\n\n## INSIGHTS DO DIÁRIO DO CLIENTE:\n" + "\n".join([f"- {insight}" for insight in insights[:5]])
+                                        novo_system_prompt = system_prompt_atual + novos_insights
+                                        
+                                        # Atualizar agente
+                                        atualizar_agente(
+                                            agente['_id'],
+                                            agente['nome'],
+                                            novo_system_prompt,
+                                            agente.get('base_conhecimento', ''),
+                                            comentarios_atuais,  # Mantém os comentários
+                                            agente.get('planejamento', ''),
+                                            agente.get('categoria', 'Social'),
+                                            agente.get('squad_permitido', 'Todos'),
+                                            agente.get('agente_mae_id'),
+                                            agente.get('herdar_elementos', [])
+                                        )
+                                        
+                                        st.session_state.agente_selecionado = obter_agente_com_heranca(agente['_id'])
+                                        st.success("✅ Insights aplicados ao agente!")
+                                    else:
+                                        st.warning("Nenhum insight extraído do relatório")
+                                
+                                except Exception as e:
+                                    st.error(f"Erro ao aplicar insights: {str(e)}")
+                    
+                    except Exception as e:
+                        st.error(f"❌ Erro ao gerar análise: {str(e)}")
