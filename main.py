@@ -1002,7 +1002,8 @@ if agentes:
 # Menu de abas - DETERMINAR QUAIS ABAS MOSTRAR
 abas_base = [
     "💬 Chat", 
-    "⚙️ Gerenciar Agentes", 
+    "⚙️ Gerenciar Agentes",
+    "📓 Diário de Bordo",
     "✅ Validação Unificada",
     "✨ Geração de Conteúdo",
     "📝 Revisão Ortográfica",
@@ -7390,12 +7391,7 @@ with tab_mapping["📅 Criadora de Calendário"]:
                 except Exception as e:
                     st.error(f"Erro XLSX: {str(e)}")
 
-# --- ABA: DIÁRIO DE BORDO ---
-if "📓 Diário de Bordo" not in abas_base:
-    abas_base.append("📓 Diário de Bordo")
-    # Atualizar o mapeamento de abas
-    tabs = st.tabs(abas_base)
-    tab_mapping["📓 Diário de Bordo"] = tabs[len(abas_base) - 1]
+
 
 with tab_mapping["📓 Diário de Bordo"]:
     st.header("📓 Diário de Bordo - Cliente")
@@ -7451,24 +7447,22 @@ with tab_mapping["📓 Diário de Bordo"]:
             
             # Análise rápida
             with st.expander("🔍 Análise Rápida", expanded=False):
-                if palavras > 100:
-                    # Contar ocorrências de palavras-chave
-                    palavras_chave = ['problema', 'ajuste', 'melhorar', 'gostei', 'não gostei', 'sugestão', 'importante', 'urgente']
-                    contagens = {}
+
+                palavras_chave = ['problema', 'ajuste', 'melhorar', 'gostei', 'não gostei', 'sugestão', 'importante', 'urgente']
+                contagens = {}
                     
-                    texto_lower = comentarios_atuais.lower()
-                    for palavra in palavras_chave:
-                        contagens[palavra] = texto_lower.count(palavra)
+                texto_lower = comentarios_atuais.lower()
+                for palavra in palavras_chave:
+                    contagens[palavra] = texto_lower.count(palavra)
                     
-                    st.write("**Palavras-chave encontradas:**")
-                    for palavra, count in contagens.items():
-                        if count > 0:
-                            st.write(f"- {palavra}: {count} ocorrência(s)")
+                st.write("**Palavras-chave encontradas:**")
+                for palavra, count in contagens.items():
+                    if count > 0:
+                        st.write(f"- {palavra}: {count} ocorrência(s)")
                     
-                    if sum(contagens.values()) == 0:
+                if sum(contagens.values()) == 0:
                         st.info("Nenhuma palavra-chave comum encontrada")
-                else:
-                    st.info("Diário muito curto para análise")
+                
         
         else:
             st.info("📭 O diário está vazio. Adicione conteúdo na aba 'Adicionar'")
