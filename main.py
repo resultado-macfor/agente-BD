@@ -703,7 +703,7 @@ def construir_contexto(agente, segmentos_selecionados, historico_mensagens=None)
         contexto += f"### BASE DE CONHECIMENTO ###\n{agente['base_conhecimento']}\n\n"
     
     if "comments" in segmentos_selecionados and agente.get('comments'):
-        contexto += f"### COMENTÁRIOS DO CLIENTE ###\n{agente['comments']}\n\n"
+        contexto += f"### Diário DO CLIENTE ###\n{agente['comments']}\n\n"
     
     if "planejamento" in segmentos_selecionados and agente.get('planejamento'):
         contexto += f"### PLANEJAMENTO ###\n{agente['planejamento']}\n\n"
@@ -1138,7 +1138,7 @@ with tab_mapping["💬 Chat"]:
     segmentos_disponiveis = {
         "Prompt do Sistema": "system_prompt",
         "Brand Guidelines": "base_conhecimento", 
-        "Comentários do Cliente": "comments",
+        "Diário do Cliente": "comments",
         "Planejamento": "planejamento"
     }
     
@@ -1332,8 +1332,8 @@ DIRETRIZES:
                     base_conhecimento = st.text_area("Brand Guidelines:", height=200,
                                                    placeholder="Cole aqui informações, diretrizes, dados...",
                                                    help="Deixe vazio se for herdar do agente mãe")
-                    comments = st.text_area("Comentários do cliente:", height=200,
-                                                   placeholder="Cole aqui os comentários de ajuste do cliente (Se houver)",
+                    comments = st.text_area("Diário do cliente:", height=200,
+                                                   placeholder="Cole aqui o diário de acompanhamento do cliente",
                                                    help="Deixe vazio se for herdar do agente mãe")
                     planejamento = st.text_area("Planejamento:", height=200,
                                                placeholder="Estratégias, planejamentos, cronogramas...",
@@ -1474,7 +1474,7 @@ DIRETRIZES:
                             
                             novo_prompt = st.text_area("Prompt de Sistema:", value=agente['system_prompt'], height=150)
                             nova_base = st.text_area("Brand Guidelines:", value=agente.get('base_conhecimento', ''), height=200)
-                            nova_comment = st.text_area("Comentários:", value=agente.get('comments', ''), height=200)
+                            nova_comment = st.text_area("Diário:", value=agente.get('comments', ''), height=200)
                             novo_planejamento = st.text_area("Planejamento:", value=agente.get('planejamento', ''), height=200)
                         
                         submitted = st.form_submit_button("Atualizar Agente")
@@ -1539,10 +1539,7 @@ DIRETRIZES:
                             else:
                                 st.warning("⚠️ Base de conhecimento não configurada")
                             
-                            # Agentes de monitoramento não mostram outros campos
-                            st.write("**System Prompt:** (Não utilizado em monitoramento)")
-                            st.write("**Comentários:** (Não utilizado em monitoramento)")
-                            st.write("**Planejamento:** (Não utilizado em monitoramento)")
+
                             
                         else:
                             # Para outras categorias, mostrar estrutura completa
@@ -1556,7 +1553,7 @@ DIRETRIZES:
                             if agente.get('base_conhecimento'):
                                 st.write(f"**Brand Guidelines:** {agente['base_conhecimento'][:200]}...")
                             if agente.get('comments'):
-                                st.write(f"**Comentários do cliente:** {agente['comments'][:200]}...")
+                                st.write(f"**Diário do cliente:** {agente['comments'][:200]}...")
                             if agente.get('planejamento'):
                                 st.write(f"**Planejamento:** {agente['planejamento'][:200]}...")
                         
