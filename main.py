@@ -40,7 +40,7 @@ from pathlib import Path
 # Configuração inicial
 st.set_page_config(
     layout="wide",
-    page_title="Agente BD",
+    page_title="Agente Health",
     page_icon="🤖"
 )
 
@@ -421,7 +421,7 @@ def get_current_squad():
 
 def login():
     """Formulário de login e cadastro"""
-    st.title("🔒 Agente BD - Login")
+    st.title("🔒 Agente Health - Login")
     
     tab_login, tab_cadastro = st.tabs(["Login", "Cadastro"])
     
@@ -706,7 +706,7 @@ def construir_contexto(agente, segmentos_selecionados, historico_mensagens=None)
 # --- MODIFICAÇÃO: SELECTBOX PARA SELEÇÃO DE AGENTE ---
 def selecionar_agente_interface():
     """Interface para seleção de agente usando selectbox"""
-    st.title("Agente BD")
+    st.title("Agente Health")
     
     # Carregar agentes disponíveis
     agentes = listar_agentes()
@@ -8436,7 +8436,7 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                         
                         ---
                         
-                        *Planejamento gerado automaticamente pelo Sistema Agente BD*
+                        *Planejamento gerado automaticamente pelo Sistema Agente Health*
                         """
                         
                         # Botões de download
@@ -9428,7 +9428,7 @@ with tab_mapping["📱 Planejamento de Mídias"]:
                         
                         ---
                         
-                        *Planejamento gerado automaticamente pelo Sistema Agente BD*
+                        *Planejamento gerado automaticamente pelo Sistema Agente Health*
                         """
                         
                         # Botões de download
