@@ -923,11 +923,12 @@ if agentes:
 # Menu de abas - DETERMINAR QUAIS ABAS MOSTRAR
 abas_base = [
     "💬 Chat", 
+    "⚙️ Gerenciar Agentes",
     "📓 Diário de Bordo",
     "✅ Validação Unificada",
     "✨ Geração de Conteúdo",
     "📝 Revisão Ortográfica",
-    "💬 Monitoramento de Redes",
+    "Monitoramento de Redes",
     "🚀 Otimização de Conteúdo",
     "📅 Criadora de Calendário",
     "📊 Planejamento Estratégico",
@@ -980,7 +981,72 @@ with tab_mapping["💬 Chat"]:
     else:
         st.sidebar.success(f"✅ {modelo_chat} ativo")
     
+    # Controles de navegação no topo
+    col1, col2, col3 = st.columns([1, 1, 1])
     
+    with col1:
+        if st.button("📚 Carregar Histórico", key="carregar_historico"):
+            st.session_state.show_historico = not st.session_state.show_historico
+            st.rerun()
+    
+    with col2:
+        if st.button("🔄 Limpar Chat", key="limpar_chat"):
+            st.session_state.messages = []
+            if hasattr(st.session_state, 'historico_contexto'):
+                st.session_state.historico_contexto = []
+            st.success("Chat limpo!")
+            st.rerun()
+    
+    with col3:
+        if st.button("🔁 Trocar Agente", key="trocar_agente_chat"):
+            st.session_state.agente_selecionado = None
+            st.session_state.messages = []
+            st.session_state.historico_contexto = []
+            st.rerun()
+    
+    # Mostrar se há histórico carregado
+    if hasattr(st.session_state, 'historico_contexto') and st.session_state.historico_contexto:
+        st.info(f"📖 Usando histórico anterior com {len(st.session_state.historico_contexto)} mensagens como contexto")
+    
+    # Modal para seleção de histórico
+    if st.session_state.show_historico:
+        with st.expander("📚 Selecionar Histórico de Conversa", expanded=True):
+            conversas_anteriores = obter_conversas(agente['_id'])
+            
+            if conversas_anteriores:
+                for i, conversa in enumerate(conversas_anteriores[:10]):  # Últimas 10 conversas
+                    col_hist1, col_hist2, col_hist3 = st.columns([3, 1, 1])
+                    
+                    with col_hist1:
+                        # CORREÇÃO: Usar get() para evitar KeyError
+                        data_display = conversa.get('data_formatada', conversa.get('data', 'Data desconhecida'))
+                        mensagens_count = len(conversa.get('mensagens', []))
+                        st.write(f"**{data_display}** - {mensagens_count} mensagens")
+                    
+                    with col_hist2:
+                        if st.button("👀 Visualizar", key=f"ver_{i}"):
+                            st.session_state.conversa_visualizada = conversa.get('mensagens', [])
+                    
+                    with col_hist3:
+                        if st.button("📥 Usar", key=f"usar_{i}"):
+                            st.session_state.messages = conversa.get('mensagens', [])
+                            st.session_state.historico_contexto = conversa.get('mensagens', [])
+                            st.session_state.show_historico = False
+                            st.success(f"✅ Histórico carregado: {len(conversa.get('mensagens', []))} mensagens")
+                            st.rerun()
+                
+                # Visualizar conversa selecionada
+                if hasattr(st.session_state, 'conversa_visualizada'):
+                    st.subheader("👀 Visualização do Histórico")
+                    for msg in st.session_state.conversa_visualizada[-6:]:  # Últimas 6 mensagens
+                        with st.chat_message(msg.get("role", "user")):
+                            st.markdown(msg.get("content", ""))
+                    
+                    if st.button("Fechar Visualização", key="fechar_visualizacao"):
+                        st.session_state.conversa_visualizada = None
+                        st.rerun()
+            else:
+                st.info("Nenhuma conversa anterior encontrada")
     
     # Mostrar informações de herança se aplicável
     if 'agente_mae_id' in agente and agente['agente_mae_id']:
@@ -1069,7 +1135,645 @@ with tab_mapping["💬 Chat"]:
                 except Exception as e:
                     st.error(f"Erro ao gerar resposta: {str(e)}")
 
+# --- ABA: GERENCIAMENTO DE AGENTES (MODIFICADA PARA SQUADS) ---
+with tab_mapping["⚙️ Gerenciar Agentes"]:
+    st.header("Gerenciamento de Agentes")
+    
+    # Verificar autenticação apenas para gerenciamento
+    current_user = get_current_user()
+    current_squad = get_current_squad()
+    
+    if current_squad not in ["admin", "Syngenta", "SME", "Enterprise"]:
+        st.warning("Acesso restrito a usuários autorizados")
+    else:
+        # Para admin, verificar senha adicional
+        if current_squad == "admin":
+            if not check_admin_password():
+                st.warning("Digite a senha de administrador")
+            else:
+                st.write(f'Bem-vindo administrador!')
+        else:
+            st.write(f'Bem-vindo {current_user.get("nome", "Usuário")} do squad {current_squad}!')
+            
+        # Subabas para gerenciamento
+        sub_tab1, sub_tab2, sub_tab3 = st.tabs(["Criar Agente", "Editar Agente", "Gerenciar Agentes"])
+        
+        with sub_tab1:
+            st.subheader("Criar Novo Agente")
+            
+            with st.form("form_criar_agente"):
+                nome_agente = st.text_input("Nome do Agente:")
+                
+                # Seleção de categoria - AGORA COM MONITORAMENTO
+                categoria = st.selectbox(
+                    "Categoria:",
+                    ["Social", "SEO", "Conteúdo", "Monitoramento"],
+                    help="Organize o agente por área de atuação"
+                )
+                
+                # NOVO: Seleção de squad permitido
+                squad_permitido = st.selectbox(
+                    "Squad Permitido:",
+                    ["Todos", "Syngenta", "SME", "Enterprise"],
+                    help="Selecione qual squad pode ver e usar este agente"
+                )
+                
+                # Configurações específicas para agentes de monitoramento
+                if categoria == "Monitoramento":
+                    st.info("🔍 **Agente de Monitoramento**: Este agente será usado apenas na aba de Monitoramento de Redes e terá uma estrutura simplificada.")
+                    
+                    # Para monitoramento, apenas base de conhecimento
+                    base_conhecimento = st.text_area(
+                        "Base de Conhecimento para Monitoramento:", 
+                        height=300,
+                        placeholder="""Cole aqui a base de conhecimento específica para monitoramento de redes sociais.
 
+PERSONALIDADE: Especialista técnico do agronegócio com habilidade social - "Especialista que fala como gente"
+
+TOM DE VOZ:
+- Técnico, confiável e seguro, mas acessível
+- Evita exageros e promessas vazias
+- Sempre embasado em fatos e ciência
+- Frases curtas e diretas, mais simpáticas
+- Toque de leveza e ironia pontual quando o contexto permite
+
+PRODUTOS SYN:
+- Fortenza: Tratamento de sementes inseticida para Cerrado
+- Verdatis: Inseticida com tecnologia PLINAZOLIN
+- Megafol: Bioativador natural
+- Miravis Duo: Fungicida para controle de manchas foliares
+
+DIRETRIZES:
+- NÃO inventar informações técnicas
+- Sempre basear respostas em fatos
+- Manter tom profissional mas acessível
+- Adaptar resposta ao tipo de pergunta""",
+                        help="Esta base será usada exclusivamente para monitoramento de redes sociais"
+                    )
+                    
+                    # Campos específicos ocultos para monitoramento
+                    system_prompt = ""
+                    comments = ""
+                    planejamento = ""
+                    criar_como_filho = False
+                    agente_mae_id = None
+                    herdar_elementos = []
+                    
+                else:
+                    # Para outras categorias, manter estrutura original
+                    criar_como_filho = st.checkbox("Criar como agente filho (herdar elementos)")
+                    
+                    agente_mae_id = None
+                    herdar_elementos = []
+                    
+                    if criar_como_filho:
+                        # Listar TODOS os agentes disponíveis para herança (exceto monitoramento)
+                        agentes_mae = listar_agentes_para_heranca()
+                        agentes_mae = [agente for agente in agentes_mae if agente.get('categoria') != 'Monitoramento']
+                        
+                        if agentes_mae:
+                            agente_mae_options = {f"{agente['nome']} ({agente.get('categoria', 'Social')})": agente['_id'] for agente in agentes_mae}
+                            agente_mae_selecionado = st.selectbox(
+                                "Agente Mãe:",
+                                list(agente_mae_options.keys()),
+                                help="Selecione o agente do qual este agente irá herdar elementos"
+                            )
+                            agente_mae_id = agente_mae_options[agente_mae_selecionado]
+                            
+                            st.subheader("Elementos para Herdar")
+                            herdar_elementos = st.multiselect(
+                                "Selecione os elementos a herdar do agente mãe:",
+                                ["system_prompt", "base_conhecimento", "comments", "planejamento"],
+                                help="Estes elementos serão herdados do agente mãe se não preenchidos abaixo"
+                            )
+                        else:
+                            st.info("Nenhum agente disponível para herança. Crie primeiro um agente mãe.")
+                    
+                    system_prompt = st.text_area("Prompt de Sistema:", height=150, 
+                                                placeholder="Ex: Você é um assistente especializado em...",
+                                                help="Deixe vazio se for herdar do agente mãe")
+                    base_conhecimento = st.text_area("Brand Guidelines:", height=200,
+                                                   placeholder="Cole aqui informações, diretrizes, dados...",
+                                                   help="Deixe vazio se for herdar do agente mãe")
+                    comments = st.text_area("Diário do cliente:", height=200,
+                                                   placeholder="Cole aqui o diário de acompanhamento do cliente",
+                                                   help="Deixe vazio se for herdar do agente mãe")
+                    planejamento = st.text_area("Planejamento:", height=200,
+                                               placeholder="Estratégias, planejamentos, cronogramas...",
+                                               help="Deixe vazio se for herdar do agente mãe")
+                
+                submitted = st.form_submit_button("Criar Agente")
+                if submitted:
+                    if nome_agente:
+                        agente_id = criar_agente(
+                            nome_agente, 
+                            system_prompt, 
+                            base_conhecimento, 
+                            comments, 
+                            planejamento,
+                            categoria,
+                            squad_permitido,  # Novo campo
+                            agente_mae_id if criar_como_filho else None,
+                            herdar_elementos if criar_como_filho else []
+                        )
+                        st.success(f"Agente '{nome_agente}' criado com sucesso na categoria {categoria} para o squad {squad_permitido}!")
+                    else:
+                        st.error("Nome é obrigatório!")
+        
+        with sub_tab2:
+            st.subheader("Editar Agente Existente")
+            
+            agentes = listar_agentes()
+            if agentes:
+                agente_options = {agente['nome']: agente for agente in agentes}
+                agente_selecionado_nome = st.selectbox("Selecione o agente para editar:", 
+                                                     list(agente_options.keys()))
+                
+                if agente_selecionado_nome:
+                    agente = agente_options[agente_selecionado_nome]
+                    
+                    with st.form("form_editar_agente"):
+                        novo_nome = st.text_input("Nome do Agente:", value=agente['nome'])
+                        
+                        # Categoria - AGORA COM MONITORAMENTO
+                        categorias_disponiveis = ["Social", "SEO", "Conteúdo", "Monitoramento"]
+                        if agente.get('categoria') in categorias_disponiveis:
+                            index_categoria = categorias_disponiveis.index(agente.get('categoria', 'Social'))
+                        else:
+                            index_categoria = 0
+                            
+                        nova_categoria = st.selectbox(
+                            "Categoria:",
+                            categorias_disponiveis,
+                            index=index_categoria,
+                            help="Organize o agente por área de atuação"
+                        )
+                        
+                        # NOVO: Squad permitido
+                        squads_disponiveis = ["Todos", "Syngenta", "SME", "Enterprise"]
+                        squad_atual = agente.get('squad_permitido', 'Todos')
+                        if squad_atual in squads_disponiveis:
+                            index_squad = squads_disponiveis.index(squad_atual)
+                        else:
+                            index_squad = 0
+                            
+                        novo_squad_permitido = st.selectbox(
+                            "Squad Permitido:",
+                            squads_disponiveis,
+                            index=index_squad,
+                            help="Selecione qual squad pode ver e usar este agente"
+                        )
+                        
+                        # Interface diferente para agentes de monitoramento
+                        if nova_categoria == "Monitoramento":
+                            st.info("🔍 **Agente de Monitoramento**: Este agente será usado apenas na aba de Monitoramento de Redes.")
+                            
+                            # Para monitoramento, apenas base de conhecimento
+                            nova_base = st.text_area(
+                                "Base de Conhecimento para Monitoramento:", 
+                                value=agente.get('base_conhecimento', ''),
+                                height=300,
+                                help="Esta base será usada exclusivamente para monitoramento de redes sociais"
+                            )
+                            
+                            # Campos específicos ocultos para monitoramento
+                            novo_prompt = ""
+                            nova_comment = ""
+                            novo_planejamento = ""
+                            agente_mae_id = None
+                            herdar_elementos = []
+                            
+                            # Remover herança se existir
+                            if agente.get('agente_mae_id'):
+                                st.warning("⚠️ Agentes de monitoramento não suportam herança. A herança será removida.")
+                            
+                        else:
+                            # Para outras categorias, manter estrutura original
+                            
+                            # Informações de herança (apenas se não for monitoramento)
+                            if agente.get('agente_mae_id'):
+                                agente_mae = obter_agente(agente['agente_mae_id'])
+                                if agente_mae:
+                                    st.info(f"🔗 Este agente é filho de: {agente_mae['nome']}")
+                                    st.write(f"Elementos herdados: {', '.join(agente.get('herdar_elementos', []))}")
+                            
+                            # Opção para tornar independente
+                            if agente.get('agente_mae_id'):
+                                tornar_independente = st.checkbox("Tornar agente independente (remover herança)")
+                                if tornar_independente:
+                                    agente_mae_id = None
+                                    herdar_elementos = []
+                                else:
+                                    agente_mae_id = agente.get('agente_mae_id')
+                                    herdar_elementos = agente.get('herdar_elementos', [])
+                            else:
+                                agente_mae_id = None
+                                herdar_elementos = []
+                                # Opção para adicionar herança
+                                adicionar_heranca = st.checkbox("Adicionar herança de agente mãe")
+                                if adicionar_heranca:
+                                    # Listar TODOS os agentes disponíveis para herança (excluindo o próprio e monitoramento)
+                                    agentes_mae = listar_agentes_para_heranca(agente['_id'])
+                                    agentes_mae = [agente_mae for agente_mae in agentes_mae if agente_mae.get('categoria') != 'Monitoramento']
+                                    
+                                    if agentes_mae:
+                                        agente_mae_options = {f"{agente_mae['nome']} ({agente_mae.get('categoria', 'Social')})": agente_mae['_id'] for agente_mae in agentes_mae}
+                                        if agente_mae_options:
+                                            agente_mae_selecionado = st.selectbox(
+                                                "Agente Mãe:",
+                                                list(agente_mae_options.keys()),
+                                                help="Selecione o agente do qual este agente irá herdar elementos"
+                                            )
+                                            agente_mae_id = agente_mae_options[agente_mae_selecionado]
+                                            herdar_elementos = st.multiselect(
+                                                "Elementos para herdar:",
+                                                ["system_prompt", "base_conhecimento", "comments", "planejamento"],
+                                                default=herdar_elementos
+                                            )
+                                        else:
+                                            st.info("Nenhum agente disponível para herança.")
+                                    else:
+                                        st.info("Nenhum agente disponível para herança.")
+                            
+                            novo_prompt = st.text_area("Prompt de Sistema:", value=agente['system_prompt'], height=150)
+                            nova_base = st.text_area("Brand Guidelines:", value=agente.get('base_conhecimento', ''), height=200)
+                            nova_comment = st.text_area("Diário:", value=agente.get('comments', ''), height=200)
+                            novo_planejamento = st.text_area("Planejamento:", value=agente.get('planejamento', ''), height=200)
+                        
+                        submitted = st.form_submit_button("Atualizar Agente")
+                        if submitted:
+                            if novo_nome:
+                                atualizar_agente(
+                                    agente['_id'], 
+                                    novo_nome, 
+                                    novo_prompt, 
+                                    nova_base, 
+                                    nova_comment, 
+                                    novo_planejamento,
+                                    nova_categoria,
+                                    novo_squad_permitido,  # Novo campo
+                                    agente_mae_id,
+                                    herdar_elementos
+                                )
+                                st.success(f"Agente '{novo_nome}' atualizado com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("Nome é obrigatório!")
+            else:
+                st.info("Nenhum agente criado ainda.")
+        
+        with sub_tab3:
+            st.subheader("Gerenciar Agentes")
+            
+            # Mostrar informações do usuário atual
+            current_squad = get_current_squad()
+            if current_squad == "admin":
+                st.info("👑 Modo Administrador: Visualizando todos os agentes do sistema")
+            else:
+                st.info(f"👤 Visualizando agentes do squad {current_squad} e squad 'Todos'")
+            
+            # Filtros por categoria - AGORA COM MONITORAMENTO
+            categorias = ["Todos", "Social", "SEO", "Conteúdo", "Monitoramento"]
+            categoria_filtro = st.selectbox("Filtrar por categoria:", categorias)
+            
+            agentes = listar_agentes()
+            
+            # Aplicar filtro
+            if categoria_filtro != "Todos":
+                agentes = [agente for agente in agentes if agente.get('categoria') == categoria_filtro]
+            
+            if agentes:
+                for i, agente in enumerate(agentes):
+                    with st.expander(f"{agente['nome']} - {agente.get('categoria', 'Social')} - Squad: {agente.get('squad_permitido', 'Todos')} - Criado em {agente['data_criacao'].strftime('%d/%m/%Y')}"):
+                        
+                        # Mostrar proprietário se for admin
+                        owner_info = ""
+                        if current_squad == "admin" and agente.get('criado_por'):
+                            owner_info = f" | 👤 {agente['criado_por']}"
+                            st.write(f"**Proprietário:** {agente['criado_por']}")
+                            st.write(f"**Squad do Criador:** {agente.get('criado_por_squad', 'N/A')}")
+                        
+                        # Mostrar informações específicas por categoria
+                        if agente.get('categoria') == 'Monitoramento':
+                            st.info("🔍 **Agente de Monitoramento** - Usado apenas na aba de Monitoramento de Redes")
+                            
+                            if agente.get('base_conhecimento'):
+                                st.write(f"**Base de Conhecimento:** {agente['base_conhecimento'][:200]}...")
+                            else:
+                                st.warning("⚠️ Base de conhecimento não configurada")
+                            
+
+                            
+                        else:
+                            # Para outras categorias, mostrar estrutura completa
+                            if agente.get('agente_mae_id'):
+                                agente_mae = obter_agente(agente['agente_mae_id'])
+                                if agente_mae:
+                                    st.write(f"**🔗 Herda de:** {agente_mae['nome']}")
+                                    st.write(f"**Elementos herdados:** {', '.join(agente.get('herdar_elementos', []))}")
+                            
+                            st.write(f"**Prompt de Sistema:** {agente['system_prompt'][:100]}..." if agente['system_prompt'] else "**Prompt de Sistema:** (herdado ou vazio)")
+                            if agente.get('base_conhecimento'):
+                                st.write(f"**Brand Guidelines:** {agente['base_conhecimento'][:200]}...")
+                            if agente.get('comments'):
+                                st.write(f"**Diário do cliente:** {agente['comments'][:200]}...")
+                            if agente.get('planejamento'):
+                                st.write(f"**Planejamento:** {agente['planejamento'][:200]}...")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Selecionar para Chat", key=f"select_{i}"):
+                                agente_completo = obter_agente_com_heranca(agente['_id'])
+                                st.session_state.agente_selecionado = agente_completo
+                                st.session_state.messages = []
+                                st.success(f"Agente '{agente['nome']}' selecionado!")
+                                st.rerun()
+                        with col2:
+                            if st.button("Desativar", key=f"delete_{i}"):
+                                desativar_agente(agente['_id'])
+                                st.success(f"Agente '{agente['nome']}' desativado!")
+                                st.rerun()
+            else:
+                st.info("Nenhum agente encontrado para esta categoria.")
+
+if "📋 Briefing" in tab_mapping:
+    with tab_mapping["📋 Briefing"]:
+        st.header("📋 Gerador de Briefings - SYN")
+        st.markdown("Digite o conteúdo da célula do calendário para gerar um briefing completo no padrão SYN.")
+        
+        # Abas para diferentes modos de operação
+        tab1, tab2 = st.tabs(["Briefing Individual", "Processamento em Lote (CSV)"])
+        
+        with tab1:
+            st.markdown("### Digite o conteúdo da célula do calendário")
+
+            content_input = st.text_area(
+                "Conteúdo da célula:",
+                placeholder="Ex: megafol - série - potencial máximo, todo o tempo",
+                height=100,
+                help="Cole aqui o conteúdo exato da célula do calendário do Sheets",
+                key="individual_content"
+            )
+
+            # Campos opcionais para ajuste
+            col1, col2 = st.columns(2)
+
+            with col1:
+                data_input = st.date_input("Data prevista:", value=datetime.datetime.now(), key="individual_date")
+
+            with col2:
+                formato_principal = st.selectbox(
+                    "Formato principal:",
+                    ["Reels + capa", "Carrossel + stories", "Blog + redes", "Vídeo + stories", "Multiplataforma"],
+                    key="individual_format"
+                )
+
+            generate_btn = st.button("Gerar Briefing Individual", type="primary", key="individual_btn")
+
+            # Processamento e exibição do briefing individual
+            if generate_btn and content_input:
+                with st.spinner("Analisando conteúdo e gerando briefing..."):
+                    # Extrair informações do produto
+                    product, culture, action = extract_product_info(content_input)
+                    
+                    if product and product in PRODUCT_DESCRIPTIONS:
+                        # Gerar briefing completo
+                        briefing = generate_briefing(content_input, product, culture, action, data_input, formato_principal)
+                        
+                        # Exibir briefing
+                        st.markdown("## Briefing Gerado")
+                        st.text(briefing)
+                        
+                        # Botão de download
+                        st.download_button(
+                            label="Baixar Briefing",
+                            data=briefing,
+                            file_name=f"briefing_{product}_{data_input.strftime('%Y%m%d')}.txt",
+                            mime="text/plain",
+                            key="individual_download"
+                        )
+                        
+                        # Informações extras
+                        with st.expander("Informações Extraídas"):
+                            st.write(f"Produto: {product}")
+                            st.write(f"Cultura: {culture}")
+                            st.write(f"Ação: {action}")
+                            st.write(f"Data: {data_input.strftime('%d/%m/%Y')}")
+                            st.write(f"Formato principal: {formato_principal}")
+                            st.write(f"Descrição: {PRODUCT_DESCRIPTIONS[product]}")
+                            
+                    elif product:
+                        st.warning(f"Produto '{product}' não encontrado no dicionário. Verifique a grafia.")
+                        st.info("Produtos disponíveis: " + ", ".join(list(PRODUCT_DESCRIPTIONS.keys())[:10]) + "...")
+                    else:
+                        st.error("Não foi possível identificar um produto no conteúdo. Tente formatos como:")
+                        st.code("""
+                        megafol - série - potencial máximo, todo o tempo
+                        verdavis - soja - depoimento produtor
+                        engeo pleno s - milho - controle percevejo
+                        miravis duo - algodão - reforço preventivo
+                        """)
+
+        with tab2:
+            st.markdown("### Processamento em Lote via CSV")
+            
+            st.info("""
+            Faça upload de um arquivo CSV exportado do Google Sheets.
+            O sistema irá processar cada linha a partir da segunda linha (ignorando cabeçalhos)
+            e gerar briefings apenas para as linhas que contêm produtos reconhecidos.
+            """)
+            
+            uploaded_file = st.file_uploader(
+                "Escolha o arquivo CSV", 
+                type=['csv'],
+                help="Selecione o arquivo CSV exportado do Google Sheets"
+            )
+            
+            if uploaded_file is not None:
+                try:
+                    # Ler o CSV
+                    df = pd.read_csv(uploaded_file)
+                    st.success(f"CSV carregado com sucesso! {len(df)} linhas encontradas.")
+                    
+                    # Mostrar prévia do arquivo
+                    with st.expander("Visualizar primeiras linhas do CSV"):
+                        st.dataframe(df.head())
+                    
+                    # Configurações para processamento em lote
+                    st.markdown("### Configurações do Processamento em Lote")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        data_padrao = st.date_input(
+                            "Data padrão para todos os briefings:",
+                            value=datetime.datetime.now(),
+                            key="batch_date"
+                        )
+                    
+                    with col2:
+                        formato_padrao = st.selectbox(
+                            "Formato principal padrão:",
+                            ["Reels + capa", "Carrossel + stories", "Blog + redes", "Vídeo + stories", "Multiplataforma"],
+                            key="batch_format"
+                        )
+                    
+                    # Identificar coluna com conteúdo
+                    colunas = df.columns.tolist()
+                    coluna_conteudo = st.selectbox(
+                        "Selecione a coluna que contém o conteúdo das células:",
+                        colunas,
+                        help="Selecione a coluna que contém os textos das células do calendário"
+                    )
+                    
+                    processar_lote = st.button("Processar CSV e Gerar Briefings", type="primary", key="batch_btn")
+                    
+                    if processar_lote:
+                        briefings_gerados = []
+                        linhas_processadas = 0
+                        linhas_com_produto = 0
+                        
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        for index, row in df.iterrows():
+                            linhas_processadas += 1
+                            progress_bar.progress(linhas_processadas / len(df))
+                            status_text.text(f"Processando linha {linhas_processadas} de {len(df)}...")
+                            
+                            # Pular a primeira linha (cabeçalhos)
+                            if index == 0:
+                                continue
+                            
+                            # Obter conteúdo da célula
+                            content = str(row[coluna_conteudo]) if pd.notna(row[coluna_conteudo]) else ""
+                            
+                            if content:
+                                # Extrair informações do produto
+                                product, culture, action = extract_product_info(content)
+                                
+                                if product and product in PRODUCT_DESCRIPTIONS:
+                                    linhas_com_produto += 1
+                                    # Gerar briefing
+                                    briefing = generate_briefing(
+                                        content, 
+                                        product, 
+                                        culture, 
+                                        action, 
+                                        data_padrao, 
+                                        formato_padrao
+                                    )
+                                    
+                                    briefings_gerados.append({
+                                        'linha': index + 1,
+                                        'produto': product,
+                                        'conteudo': content,
+                                        'briefing': briefing,
+                                        'arquivo': f"briefing_{product}_{index+1}.txt"
+                                    })
+                        
+                        progress_bar.empty()
+                        status_text.empty()
+                        
+                        # Resultados do processamento
+                        st.success(f"Processamento concluído! {linhas_com_produto} briefings gerados de {linhas_processadas-1} linhas processadas.")
+                        
+                        if briefings_gerados:
+                            # Exibir resumo
+                            st.markdown("### Briefings Gerados")
+                            resumo_df = pd.DataFrame([{
+                                'Linha': b['linha'],
+                                'Produto': b['produto'],
+                                'Conteúdo': b['conteudo'][:50] + '...' if len(b['conteudo']) > 50 else b['conteudo']
+                            } for b in briefings_gerados])
+                            
+                            st.dataframe(resumo_df)
+                            
+                            # Criar arquivo ZIP com todos os briefings
+                            import zipfile
+                            from io import BytesIO
+                            
+                            zip_buffer = BytesIO()
+                            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                                for briefing_info in briefings_gerados:
+                                    zip_file.writestr(
+                                        briefing_info['arquivo'], 
+                                        briefing_info['briefing']
+                                    )
+                            
+                            zip_buffer.seek(0)
+                            
+                            # Botão para download do ZIP
+                            st.download_button(
+                                label="📥 Baixar Todos os Briefings (ZIP)",
+                                data=zip_buffer,
+                                file_name="briefings_syn.zip",
+                                mime="application/zip",
+                                key="batch_download_zip"
+                            )
+                            
+                            # Também permitir download individual
+                            st.markdown("---")
+                            st.markdown("### Download Individual")
+                            
+                            for briefing_info in briefings_gerados:
+                                col1, col2 = st.columns([3, 1])
+                                with col1:
+                                    st.text(f"Linha {briefing_info['linha']}: {briefing_info['produto']} - {briefing_info['conteudo'][:30]}...")
+                                with col2:
+                                    st.download_button(
+                                        label="📄 Baixar",
+                                        data=briefing_info['briefing'],
+                                        file_name=briefing_info['arquivo'],
+                                        mime="text/plain",
+                                        key=f"download_{briefing_info['linha']}"
+                                    )
+                        else:
+                            st.warning("Nenhum briefing foi gerado. Verifique se o CSV contém produtos reconhecidos.")
+                            st.info("Produtos reconhecidos: " + ", ".join(list(PRODUCT_DESCRIPTIONS.keys())[:15]) + "...")
+                            
+                except Exception as e:
+                    st.error(f"Erro ao processar o arquivo CSV: {str(e)}")
+
+        # Seção de exemplos
+        with st.expander("Exemplos de Conteúdo", expanded=True):
+            st.markdown("""
+            Formatos Reconhecidos:
+
+            Padrão: PRODUTO - CULTURA - AÇÃO ou PRODUTO - AÇÃO
+
+            Exemplos:
+            - megafol - série - potencial máximo, todo o tempo
+            - verdavis - milho - resultados do produto
+            - engeo pleno s - soja - resultados GTEC
+            - miravis duo - algodão - depoimento produtor
+            - axial - trigo - reforço pós-emergente
+            - manejo limpo - importância manejo antecipado
+            - certano HF - a jornada de certano
+            - elestal neo - soja - depoimento de produtor
+            - fortenza - a jornada da semente mais forte - EP 01
+            - reverb - vídeo conceito
+            """)
+
+        # Lista de produtos reconhecidos
+        with st.expander("Produtos Reconhecidos"):
+            col1, col2, col3 = st.columns(3)
+            products = list(PRODUCT_DESCRIPTIONS.keys())
+            
+            with col1:
+                for product in products[:10]:
+                    st.write(f"• {product}")
+            
+            with col2:
+                for product in products[10:20]:
+                    st.write(f"• {product}")
+            
+            with col3:
+                for product in products[20:]:
+                    st.write(f"• {product}")
+
+        # Rodapé
+        st.markdown("---")
+        st.caption("Ferramenta de geração automática de briefings - Padrão SYN. Digite o conteúdo da célula do calendário para gerar briefings completos.")
 
 def criar_analisadores_especialistas(contexto_agente, contexto_global):
     """Cria prompts especializados para cada área de análise"""
