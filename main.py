@@ -5,7 +5,6 @@ import io
 import google.generativeai as genai
 from PIL import Image
 import datetime
-import os
 from openai import OpenAI
 from pymongo import MongoClient
 from bson import ObjectId
@@ -23,19 +22,6 @@ import re
 from pypdf import PdfReader, PdfWriter
 from pypdf.annotations import Text
 import requests
-import os
-from anthropic import Anthropic
-import streamlit as st
-import io
-import google.generativeai as genai
-from PIL import Image
-import datetime
-import os
-from openai import OpenAI
-from pymongo import MongoClient
-from bson import ObjectId
-import json
-import hashlib
 from google.genai import types
 import PyPDF2
 from pptx import Presentation
@@ -48,8 +34,6 @@ import re
 from pypdf import PdfReader, PdfWriter
 from pypdf.annotations import Text
 import requests
-import os
-import PyPDF2
 import pdfplumber
 from pathlib import Path
 
@@ -78,8 +62,8 @@ else:
 gemini_api_key = os.getenv("GEM_API_KEY")
 if gemini_api_key:
     genai.configure(api_key=gemini_api_key)
-    modelo_vision = genai.GenerativeModel("gemini-2.0-flash", generation_config={"temperature": 0.0})
-    modelo_texto = genai.GenerativeModel("gemini-2.0-flash")
+    modelo_vision = genai.GenerativeModel("gemini-2.5-flash", generation_config={"temperature": 0.0})
+    modelo_texto = genai.GenerativeModel("gemini-2.5-flash")
 else:
     st.error("GEM_API_KEY não encontrada nas variáveis de ambiente")
     modelo_vision = None
@@ -948,6 +932,7 @@ abas_base = [
     "🚀 Otimização de Conteúdo",
     "📅 Criadora de Calendário",
     "📊 Planejamento Estratégico",
+    "📱 Planejamento de Mídias",
 ]
 
 if is_syn_agent(agente_selecionado['nome']):
@@ -5225,7 +5210,7 @@ Forneça uma análise detalhada baseada no conteúdo dessas URLs, sempre citando
                                 """
                                 
                                 if modelo_legenda == "Gemini":
-                                    modelo_visao = genai.GenerativeModel('gemini-2.0-flash')
+                                    modelo_visao = genai.GenerativeModel('gemini-2.5-flash')
                                     resposta_legenda = modelo_visao.generate_content([
                                         prompt_legenda,
                                         {"mime_type": imagem_upload.type, "data": imagem_upload.getvalue()}
@@ -7859,7 +7844,7 @@ with tab_mapping["📊 Planejamento Estratégico"]:
     gemini_api_key = os.getenv("GEM_API_KEY")
     if gemini_api_key:
         genai.configure(api_key=gemini_api_key)
-        modelo_planejamento = genai.GenerativeModel("gemini-2.0-flash")
+        modelo_planejamento = genai.GenerativeModel("gemini-2.5-flash")
     else:
         st.error("❌ GEM_API_KEY não encontrada nas variáveis de ambiente")
         st.stop()
@@ -7919,6 +7904,11 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                                      placeholder="Conte um pouco mais sobre sua marca, o que ela representa, seus valores e diferenciais no mercado...",
                                      height=100,
                                      key="referencia_da_marca_planejamento")
+
+    contexto_extra = st.text_area('Contexto adicional e/ou Briefing:', 
+                                     placeholder="",
+                                     height=100,
+                                     key="contexto_extra")
     
     sucesso = st.text_input('O que é sucesso para a marca?:', 
                           help='Redija aqui um texto que define o que a marca considera como sucesso.',
@@ -7934,13 +7924,7 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                                     placeholder="Ex: www.loja-a.com.br, www.loja-b.com.br, www.loja-c.com.br",
                                     key="site_concorrentes_planejamento")
     
-    st.markdown("### 📄 Referências de Mercado (opcional)")
-    
-    pest_files = st.file_uploader("Escolha arquivos de PDF para referência de mercado", 
-                                type=["pdf"], 
-                                accept_multiple_files=True,
-                                help="Arquivos PDF com dados de mercado, pesquisas, etc.",
-                                key="pest_files_planejamento")
+
     
     # Botão para iniciar planejamento
     if st.button("🚀 Iniciar Planejamento Estratégico", type="primary", use_container_width=True, key="iniciar_planejamento"):
@@ -8044,7 +8028,9 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                                 Elabore 10 pontos em cada segmento da análise SWOT. Pontos relevantes que irão alavancar insights poderosos no planejamento de marketing. 
                                 Cada ponto deve ser pelo menos 3 frases detalhadas, profundas e não genéricas. 
                                 Você está aqui para trazer conhecimento estratégico. organize os pontos em bullets
-                                pra ficarem organizados dentro de cada segmento da tabela.'''
+                                pra ficarem organizados dentro de cada segmento da tabela.
+                                
+                                Considere o contexto extra fornecido pelo usuário também {contexto_extra}'''
                     
                     pre_SWOT_output = modelo_planejamento.generate_content(prompt_SWOT).text
                     
@@ -8221,6 +8207,7 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                     - levando em conta a análise SWOT: ({SWOT_final}) e o golden circle: ({golden_output}) e considerando que a marca considera como sucesso: {sucesso}.
                     - considerando os objetivos de marca ({objetivos_de_marca})
                     - traga impacto, originalidade, sagacidade com seu retorno
+                    Considere o contexto extra fornecido pelo usuário também {contexto_extra}
 
                     Gerar 1 Posicionamento de marca para o cliente {nome_cliente} do ramo de atuação {ramo_atuacao} Com um slogan com essas inspirações (que não
                     devem ser copiadas, mas sim, usadas como referência na construção de um novo e original slogan) Seja original,
@@ -8563,4 +8550,1034 @@ with tab_mapping["📊 Planejamento Estratégico"]:
                 
                 except Exception as e:
                     st.error(f"❌ Erro durante o planejamento estratégico: {str(e)}")
+                    st.info("💡 Tente novamente com informações mais específicas ou verifique sua conexão com a API do Gemini.")
+
+# --- ADICIONAR APÓS A ABA DE PLANEJAMENTO ESTRATÉGICO ---
+with tab_mapping["📱 Planejamento de Mídias"]:
+    st.header("📱 Planejamento de Mídias e Redes")
+    st.markdown("""
+    **Plataformas Focadas:**
+    - ✅ **Meta Ads (Principal)** - Foco total
+    - ⚠️ **Google Ads (com restrições)** - Uso estratégico limitado
+    - 🚀 **Canais Alternativos (classe C/D):**
+        - TikTok
+        - Kwai  
+        - Pinterest
+    """)
+    
+    # Funções do MongoDB
+    def gerar_id_planejamento():
+        return str(uuid.uuid4())
+    
+    def save_to_mongo_midias(kv_output, redesplanej_output, redesplanej_output_meta, 
+                            redesplanej_output_google, redesplanej_output_tiktok, 
+                            redesplanej_output_kwai, redesplanej_output_pinterest,
+                            criativos_output, palavras_chave_output, estrategia_conteudo_output, 
+                            nome_cliente):
+        """Salva o planejamento de mídias no MongoDB"""
+        try:
+            client2 = MongoClient("mongodb+srv://gustavoromao3345:RqWFPNOJQfInAW1N@cluster0.5iilj.mongodb.net/auto_doc?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE&tlsAllowInvalidCertificates=true")
+            db = client2['arquivos_planejamento']
+            collection = db['auto_doc']
+            
+            id_planejamento = gerar_id_planejamento()
+            
+            task_outputs = {
+                "id_planejamento": f'Plano_Midias_{nome_cliente}_{id_planejamento}',
+                "nome_cliente": nome_cliente,
+                "tipo_plano": 'Plano de Mídias',
+                "data_criacao": datetime.datetime.now(),
+                "Key_Visual": kv_output,
+                "Plano_Redes_Macro": redesplanej_output,
+                "Plano_Meta_Ads": redesplanej_output_meta,
+                "Plano_Google_Ads": redesplanej_output_google,
+                "Plano_TikTok": redesplanej_output_tiktok,
+                "Plano_Kwai": redesplanej_output_kwai,
+                "Plano_Pinterest": redesplanej_output_pinterest,
+                "Plano_Criativos": criativos_output,
+                "Plano_Palavras_Chave": palavras_chave_output,
+                "Estrategia_Conteudo": estrategia_conteudo_output,
+            }
+            
+            collection.insert_one(task_outputs)
+            st.success(f"✅ Planejamento de mídias salvo com sucesso!")
+            return True
+        except Exception as e:
+            st.error(f"❌ Erro ao salvar no MongoDB: {str(e)}")
+            return False
+    
+    # Configuração do Gemini
+    gemini_api_key = os.getenv("GEM_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        modelo_midias = genai.GenerativeModel("gemini-2.5-flash")
+    else:
+        st.error("❌ GEM_API_KEY não encontrada nas variáveis de ambiente")
+        st.stop()
+    
+    # Formulário de entrada de dados
+    st.markdown("### 📋 Informações do Cliente")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        nome_cliente = st.text_input('Nome do Cliente:', 
+                                   help="Digite o nome do cliente que será planejado. Ex: 'Empresa XYZ'",
+                                   key="nome_cliente_midias")
+        site_cliente = st.text_input('Site do Cliente:', key="site_cliente_midias")
+        ramo_atuacao = st.text_input('Ramo de Atuação:', key="ramo_atuacao_midias")
+    
+    with col2:
+        intuito_plano = st.text_input('Intuito do Planejamento de Mídias:', 
+                                    placeholder="Ex: Aumentar vendas online, gerar leads, aumentar reconhecimento...",
+                                    key="intuito_plano_midias")
+        publico_alvo = st.text_input('Público alvo (especificar classes sociais C/D quando aplicável):', 
+                                   placeholder="Ex: Classe C/D, mulheres 25-40 anos, periferia urbana...",
+                                   key="publico_alvo_midias")
+    
+    st.markdown("### 🏆 Objetivos e Orçamento")
+    
+    objetivos_opcoes = [
+        'Aumentar vendas diretas (e-commerce)',
+        'Gerar leads qualificados (formulários, contatos)',
+        'Aumentar reconhecimento de marca em novas regiões',
+        'Engajar público jovem (18-30 anos)',
+        'Converter público de baixa renda (classes C/D)',
+        'Fortalecer presença em canais emergentes',
+        'Testar novos formatos criativos'
+    ]
+
+    contexto_add = st.text_input('Contexto adicional e/ou Briefing:', 
+                                    placeholder="",
+                                    key="contexto_add")
+    
+    objetivos_de_marca = st.multiselect('Selecione os objetivos da campanha:', 
+                                      objetivos_opcoes, 
+                                      key="objetivos_marca_midias")
+    
+    # Orçamento
+    col_orc1, col_orc2 = st.columns(2)
+    with col_orc1:
+        orcamento_total = st.number_input('Orçamento total (R$):', 
+                                        min_value=1000, 
+                                        max_value=1000000, 
+                                        value=10000,
+                                        key="orcamento_total")
+    
+    with col_orc2:
+        periodo_campanha = st.selectbox('Período da campanha:', 
+                                      ['1 mês', '3 meses', '6 meses', '1 ano'],
+                                      key="periodo_campanha")
+    
+    referencia_da_marca = st.text_area('Referência de marca (tom, valores, diferenciais):', 
+                                     placeholder="Descreva a personalidade da marca, tom de voz, valores...",
+                                     height=100,
+                                     key="referencia_da_marca_midias")
+    
+    st.markdown("### 🥊 Concorrência e Mercado")
+    
+    concorrentes = st.text_input('Concorrentes diretos:', 
+                               placeholder="Ex: Empresa X, Marca Y, Loja Z...",
+                               key="concorrentes_midias")
+    
+    site_concorrentes = st.text_input('Sites/apps dos concorrentes:', 
+                                    placeholder="Ex: www.concorrente1.com, appconcorrente2.com...",
+                                    key="site_concorrentes_midias")
+    
+    # Tendências específicas para mídias sociais
+    tendencias_atuais = st.text_area('Tendências atuais em mídias sociais:', 
+                                   placeholder="Ex: Vídeos curtos, conteúdo UGC, gamificação, lives...",
+                                   height=80,
+                                   key="tendencias_midias")
+    
+    # Plataformas específicas para foco
+    st.markdown("### 📱 Foco nas Plataformas")
+    
+    col_plat1, col_plat2, col_plat3 = st.columns(3)
+    
+    with col_plat1:
+        foco_meta = st.checkbox("✅ Meta Ads (Instagram/Facebook)", value=True, key="foco_meta")
+        if foco_meta:
+            st.caption("Foco principal - maior investimento")
+    
+    with col_plat2:
+        foco_google = st.checkbox("⚠️ Google Ads (com restrições)", value=True, key="foco_google")
+        if foco_google:
+            st.caption("Uso estratégico limitado")
+    
+    with col_plat3:
+        foco_alternativos = st.checkbox("🚀 Canais Alternativos", value=True, key="foco_alternativos")
+        if foco_alternativos:
+            st.caption("TikTok, Kwai, Pinterest")
+    
+    # Configurações específicas por plataforma
+    if foco_alternativos:
+        with st.expander("⚙️ Configurações Canais Alternativos", expanded=False):
+            col_alt1, col_alt2, col_alt3 = st.columns(3)
+            with col_alt1:
+                usar_tiktok = st.checkbox("TikTok", value=True, key="usar_tiktok")
+            with col_alt2:
+                usar_kwai = st.checkbox("Kwai", value=True, key="usar_kwai")
+            with col_alt3:
+                usar_pinterest = st.checkbox("Pinterest", value=True, key="usar_pinterest")
+            
+            if usar_tiktok:
+                st.text_input("Perfil público do cliente no TikTok (se houver):", 
+                            placeholder="@nomedeusuario",
+                            key="tiktok_perfil")
+    
+    # Referências criativas
+    st.markdown("### 🎨 Referências Criativas (opcional)")
+    
+    ref_files = st.file_uploader("Arquivos de referência (imagens, vídeos, PDFs):", 
+                                type=["jpg", "jpeg", "png", "mp4", "pdf", "mov"],
+                                accept_multiple_files=True,
+                                key="ref_files_midias")
+    
+    # Botão para iniciar planejamento
+    if st.button("🚀 Gerar Planejamento de Mídias", type="primary", use_container_width=True, key="iniciar_midias"):
+        # Validação dos campos obrigatórios
+        campos_obrigatorios = [nome_cliente, ramo_atuacao, intuito_plano, publico_alvo]
+        nomes_campos = ["Nome do Cliente", "Ramo de Atuação", "Intuito do Planejamento", "Público-alvo"]
+        
+        campos_faltando = []
+        for campo, nome in zip(campos_obrigatorios, nomes_campos):
+            if not campo or campo.strip() == "":
+                campos_faltando.append(nome)
+        
+        if campos_faltando:
+            st.error(f"❌ Por favor, preencha os seguintes campos obrigatórios: {', '.join(campos_faltando)}")
+        elif not objetivos_de_marca:
+            st.error("❌ Selecione pelo menos um objetivo da campanha.")
+        elif not (foco_meta or foco_google or foco_alternativos):
+            st.error("❌ Selecione pelo menos uma plataforma para o planejamento.")
+        else:
+            with st.spinner("🎬 Iniciando planejamento de mídias..."):
+                try:
+                    # Inicializar variáveis para resultados
+                    resultados = {}
+                    
+                    # 1. PESQUISAS WEB COM PERPLEXITY
+                    st.info("🌐 Pesquisando informações de mercado...")
+                    
+                    # Construir contexto do agente para as pesquisas
+                    contexto_agente_pesquisa = ""
+                    if st.session_state.agente_selecionado:
+                        agente_atual = st.session_state.agente_selecionado
+                        contexto_agente_pesquisa = construir_contexto(
+                            agente_atual, 
+                            st.session_state.segmentos_selecionados if hasattr(st.session_state, 'segmentos_selecionados') else []
+                        )
+                    
+                    # Pesquisa sobre concorrentes
+                    if concorrentes and concorrentes.strip():
+                        pesquisa_concorrentes = realizar_busca_web_com_fontes(
+                            f"estratégias de mídias sociais e publicidade digital dos concorrentes: {concorrentes} no setor {ramo_atuacao}",
+                            contexto_agente_pesquisa
+                        )
+                    else:
+                        pesquisa_concorrentes = "Nenhum concorrente informado para pesquisa."
+                    
+                    # Pesquisa sobre tendências em mídias
+                    pesquisa_tendencias = realizar_busca_web_com_fontes(
+                        f"tendências atuais em publicidade digital e mídias sociais 2024 TikTok Kwai Pinterest Meta Ads",
+                        contexto_agente_pesquisa
+                    )
+                    
+                    # Pesquisa sobre público C/D
+                    if "classe C/D" in publico_alvo or "baixa renda" in publico_alvo.lower():
+                        pesquisa_publico = realizar_busca_web_com_fontes(
+                            f"comportamento digital e consumo de mídia classes C/D Brasil 2024 TikTok Kwai",
+                            contexto_agente_pesquisa
+                        )
+                    else:
+                        pesquisa_publico = realizar_busca_web_com_fontes(
+                            f"comportamento do público {publico_alvo} em mídias sociais Brasil",
+                            contexto_agente_pesquisa
+                        )
+                    
+                    # 2. KEY VISUAL ADAPTADO PARA MÍDIAS SOCIAIS
+                    st.info("🎨 Criando Key Visual para mídias sociais...")
+                    
+                    prompt_kv = f"""
+                    Crie um Key Visual otimizado para mídias sociais, especificamente para:
+                    - **Meta Ads (Instagram/Facebook)**
+                    - **TikTok e Kwai** (quando aplicável)
+                    - **Google Display Network**
+                    
+                    **INFORMAÇÕES DO CLIENTE:**
+                    - Nome: {nome_cliente}
+                    - Ramo: {ramo_atuacao}
+                    - Público-alvo: {publico_alvo}
+                    - Objetivos: {', '.join(objetivos_de_marca)}
+                    - Orçamento: R${orcamento_total:,} para {periodo_campanha}
+                    - Contexto adicional: {contexto_add}
+                    
+                    **PLATAFORMAS PRIORITÁRIAS:**
+                    - ✅ META ADS: Foco principal
+                    - ⚠️ GOOGLE ADS: Uso estratégico limitado
+                    - 🚀 CANAIS ALTERNATIVOS: TikTok, Kwai, Pinterest (classes C/D)
+                    
+                    **CRIA UM KEY VISUAL QUE:**
+                    1. **Funcione em formato quadrado (1:1) e vertical (9:16)** - otimizado para feed e stories
+                    2. **Tenha versões para:**
+                       - Feed do Instagram/Facebook
+                       - Stories/Reels
+                       - TikTok/Kwai videos
+                       - Google Display banners
+                    3. **Use cores e tipografia que se destacem em rolagem rápida**
+                    4. **Inclua elementos visuais que funcionem em telas pequenas**
+                    5. **Seja adaptável para diferentes formatos de criativo**
+                    
+                    **DETALHE ESPECÍFICO PARA CADA FORMATO:**
+                    - **Feed (1:1):** Foco na legibilidade, hierarquia visual clara
+                    - **Stories/Reels (9:16):** Elementos dinâmicos, movimento, texto mínimo
+                    - **TikTok/Kwai:** Estilo orgânico, autêntico, menos "publicitário"
+                    - **Google Display:** Formatos responsivos, chamadas para ação claras
+                    
+                    **PALETA DE CORES:** Escolha cores que:
+                    - Se destaquem nos feeds
+                    - Transmitam confiança para classes C/D
+                    - Funcionem bem em modo escuro
+                    
+                    **DIRETRIZES PARA DESIGNER:**
+                    - Criar templates reutilizáveis
+                    - Sistema de design consistente
+                    - Elementos modulares para diferentes campanhas
+                    - Otimização para carregamento rápido
+                    """
+                    
+                    kv_output = modelo_midias.generate_content(prompt_kv).text
+                    
+                    # Refinar KV
+                    prompt_kv_refinar = f'''
+                    ### CONTEXTO ###
+                    Você é um diretor de arte especializado em mídias sociais. Está revisando um Key Visual.
+                    
+                    ### KEY VISUAL ORIGINAL ###
+                    {kv_output}
+                    
+                    ### MELHORIAS NECESSÁRIAS ###
+                    1. **Mobile-first**: Todos os elementos devem funcionar perfeitamente em telas pequenas
+                    2. **Scroll-stopping**: Elementos que façam parar a rolagem
+                    3. **Platform-specific**: Ajustes específicos para cada plataforma
+                    4. **Performance**: Otimizado para carregamento rápido
+                    5. **A/B Test Ready**: Variações prontas para testes
+                    
+                    ### PÚBLICO-ALVO ESPECÍFICO ###
+                    {publico_alvo}
+                    
+                    ### REFAIÇA O KEY VISUAL COM ###
+                    - Elementos específicos para Meta Ads
+                    - Adaptações para TikTok/Kwai (se aplicável)
+                    - Considerações para Google Display
+                    - Sistema modular e escalável
+                    '''
+                    
+                    kv_output_final = modelo_midias.generate_content(prompt_kv_refinar).text
+                    resultados['key_visual'] = kv_output_final
+                    
+                    # 3. ESTRATÉGIA DE CONTEÚDO POR PILAR
+                    st.info("📝 Desenvolvendo estratégia de conteúdo...")
+                    
+                    # Pilar Institucional
+                    prompt_institucional = f'''
+                    ## PILAR INSTITUCIONAL - ESTRATÉGIA DE CONTEÚDO
+                    
+                    **CLIENTE:** {nome_cliente}
+                    **OBJETIVO:** Posicionar marca e gerar credibilidade
+                    **PLATAFORMAS:** Meta Ads (principal), Google (limitado), alternativos (teste)
+                    - Contexto adicional: {contexto_add}
+                    
+                    **CRIAR ESTRATÉGIA QUE:**
+                    1. **Meta Ads:** Conteúdo de valor, depoimentos, cases curtos
+                    2. **Google:** Display branding, remarketing institucional
+                    3. **Alternativos:** Conteúdo autêntico, menos corporativo
+                    
+                    **FORMATOS ESPECÍFICOS:**
+                    - Meta: Carrosséis educativos, vídeos curtos institucionais
+                    - Google: Banners com mensagem de valor
+                    - TikTok/Kwai: Behind the scenes, cultura da empresa
+                    '''
+                    
+                    estrategia_institucional = modelo_midias.generate_content(prompt_institucional).text
+                    
+                    # Pilar Inspiração
+                    prompt_inspiracao = f'''
+                    ## PILAR INSPIRAÇÃO - ESTRATÉGIA DE CONTEÚDO
+                    
+                    **PÚBLICO:** {publico_alvo}
+                    **FOCO:** Conexão emocional, especialmente classes C/D
+                    - Contexto adicional: {contexto_add}
+                    
+                    **ESTRATÉGIA POR PLATAFORMA:**
+                    1. **Meta Ads:** Histórias inspiradoras, conteúdo UGC
+                    2. **TikTok/Kwai:** Desafios, tendências, conteúdo viral
+                    3. **Pinterest:** Moodboards, inspiração visual
+                    
+                    **FORMATOS:**
+                    - Meta: Reels inspiradores, depoimentos emocionais
+                    - TikTok: Participação em trends, sons virais
+                    - Kwai: Conteúdo local, regional, comunidade
+                    '''
+                    
+                    estrategia_inspiracao = modelo_midias.generate_content(prompt_inspiracao).text
+                    
+                    # Pilar Educação
+                    prompt_educacao = f'''
+                    ## PILAR EDUCAÇÃO - ESTRATÉGIA DE CONTEÚDO
+                    
+                    **RAMO:** {ramo_atuacao}
+                    **OBJETIVO:** Educar sobre produtos/serviços
+                    - Contexto adicional: {contexto_add}
+                    
+                    **ABORDAGEM POR PLATAFORMA:**
+                    1. **Meta Ads:** Tutoriais em carrossel, vídeos explicativos
+                    2. **Google:** Search ads para dúvidas, display educativo
+                    3. **TikTok:** Dicas rápidas, "edu-tainment"
+                    
+                    **TÓPICOS SUGERIDOS:**
+                    - Como usar produtos
+                    - Dicas do setor
+                    - Solução de problemas comuns
+                    '''
+                    
+                    estrategia_educacao = modelo_midias.generate_content(prompt_educacao).text
+                    
+                    # Pilar Produtos/Serviços
+                    prompt_produtos = f'''
+                    ## PILAR PRODUTOS/SERVIÇOS - ESTRATÉGIA DE CONTEÚDO
+                    
+                    **OBJETIVOS:** {', '.join(objetivos_de_marca)}
+                    **FOCO:** Conversão e vendas
+                    - Contexto adicional: {contexto_add}
+                    
+                    **ESTRATÉGIA DE VENDAS POR PLATAFORMA:**
+                    1. **META ADS (PRINCIPAL):**
+                       - Campanhas de conversão otimizadas
+                       - Dynamic ads para e-commerce
+                       - Remarketing agressivo
+                       - Teste de criativos frequente
+                    
+                    2. **GOOGLE ADS (RESTRITO):**
+                       - Search para intenção de compra
+                       - Display para remarketing
+                       - Shopping ads (se e-commerce)
+                    
+                    3. **TIKTOK/KWAI (TESTE):**
+                       - Vendas orgânicas através de conteúdo
+                       - Live shopping (teste)
+                       - Influencers micro/local
+                    '''
+                    
+                    estrategia_produtos = modelo_midias.generate_content(prompt_produtos).text
+                    
+                    # Pilar Relacionamento
+                    prompt_relacionamento = f'''
+                    ## PILAR RELACIONAMENTO - ESTRATÉGIA DE CONTEÚDO
+                    
+                    **FOCO:** Fidelização, especialmente classes C/D
+                    
+                    **ESTRATÉGIA DE COMUNIDADE:**
+                    1. **Meta Ads:** Grupos, comunidades, conteúdo exclusivo
+                    2. **TikTok/Kwai:** Interação direta, respostas, participação
+                    3. **WhatsApp Business:** Suporte, relacionamento próximo
+                    - Contexto adicional: {contexto_add}
+                    
+                    **AÇÕES DE ENGAGEMENT:**
+                    - Concursos e sorteios
+                    - Enquetes e pesquisas
+                    - Resposta a comentários
+                    - Conteúdo gerado por usuários
+                    '''
+                    
+                    estrategia_relacionamento = modelo_midias.generate_content(prompt_relacionamento).text
+                    
+                    # Consolidar estratégia de conteúdo
+                    estrategia_conteudo_completa = f"""
+                    # ESTRATÉGIA DE CONTEÚDO - {nome_cliente}
+                    
+                    ## 📱 DISTRIBUIÇÃO POR PLATAFORMA
+                    
+                    ### ✅ META ADS (70% do orçamento)
+                    {estrategia_produtos}
+                    
+                    ### ⚠️ GOOGLE ADS (20% do orçamento - uso estratégico)
+                    - Search ads para alto intento
+                    - Display para remarketing
+                    - YouTube para vídeos explicativos
+                    
+                    ### 🚀 CANAIS ALTERNATIVOS (10% do orçamento - teste)
+                    - TikTok: Conteúdo orgânico e viral
+                    - Kwai: Foco em classes C/D, regional
+                    - Pinterest: Inspiração visual
+                    
+                    ## 🎯 PILARES DE CONTEÚDO
+                    
+                    ### 1. INSTITUCIONAL
+                    {estrategia_institucional}
+                    
+                    ### 2. INSPIRAÇÃO
+                    {estrategia_inspiracao}
+                    
+                    ### 3. EDUCAÇÃO
+                    {estrategia_educacao}
+                    
+                    ### 4. PRODUTOS/SERVIÇOS
+                    {estrategia_produtos}
+                    
+                    ### 5. RELACIONAMENTO
+                    {estrategia_relacionamento}
+                    """
+                    
+                    resultados['estrategia_conteudo'] = estrategia_conteudo_completa
+                    
+                    # 4. PLANO DE REDES SOCIAIS POR PLATAFORMA
+                    st.info("📊 Criando planos específicos por plataforma...")
+                    
+                    # Plano Macro
+                    prompt_plano_macro = f'''
+                    ## PLANO MACRO DE MÍDIAS - {nome_cliente}
+                    
+                    **ORÇAMENTO TOTAL:** R${orcamento_total:,}
+                    **PERÍODO:** {periodo_campanha}
+                    
+                    ### DISTRIBUIÇÃO ORÇAMENTÁRIA:
+                    1. **META ADS:** 70% (R${orcamento_total*0.7:,.0f})
+                    - Instagram Feed/Stories/Reels
+                    - Facebook News Feed
+                    - Audience Network
+                    
+                    2. **GOOGLE ADS:** 20% (R${orcamento_total*0.2:,.0f})
+                    - Search ads (palavras-chave estratégicas)
+                    - Display Network (remarketing)
+                    - YouTube (vídeos curtos)
+                    
+                    3. **CANAL ALTERNATIVOS:** 10% (R${orcamento_total*0.1:,.0f})
+                    - TikTok: Conteúdo orgânico + ads teste
+                    - Kwai: Foco regional/classes C/D
+                    - Pinterest: Tráfego qualificado
+                    
+                    ### CRONOGRAMA SUGERIDO:
+                    - **Mês 1:** Meta Ads ativo + Google Search
+                    - **Mês 2:** Adicionar remarketing + teste TikTok
+                    - **Mês 3:** Otimização + escalar o que funciona
+                    
+                    ### KPIs PRINCIPAIS:
+                    - Meta: CPA, ROAS, CTR
+                    - Google: CPC, Conversões
+                    - Alternativos: Engajamento, Views
+                    '''
+                    
+                    plano_macro = modelo_midias.generate_content(prompt_plano_macro).text
+                    resultados['plano_macro'] = plano_macro
+                    
+                    # Plano Meta Ads
+                    if foco_meta:
+                        prompt_meta_ads = f'''
+                        ## PLANO META ADS DETALHADO - {nome_cliente}
+                        
+                        **ORÇAMENTO:** R${orcamento_total*0.7:,.0f}
+                        **FOCO:** {', '.join(objetivos_de_marca)}
+                        
+                        ### ESTRATÉGIA DE ANÚNCIOS:
+                        1. **CAMADA 1: PROSPECÇÃO**
+                           - Interesse amplo (cold audience)
+                           - Lookalike de clientes
+                           - Demografia {publico_alvo}
+                        
+                        2. **CAMADA 2: ENGAGEMENT**
+                           - Remarketing de engajamento
+                           - Video views retargeting
+                           - Lead form engagement
+                        
+                        3. **CAMADA 3: CONVERSÃO**
+                           - Dynamic ads para produtos
+                           - Conversion campaigns
+                           - Messenger/WhatsApp clicks
+                        
+                        ### FORMATOS PRIORITÁRIOS:
+                        1. **Reels Ads:** Conteúdo nativo, alto engajamento
+                        2. **Stories Ads:** Full-screen, ação direta
+                        3. **Feed Ads:** Mensagem clara, CTAs fortes
+                        4. **Carousel Ads:** Múltiplos produtos/benefícios
+                        
+                        ### SEGMENTAÇÃO ESPECÍFICA:
+                        - **Idade:** Baseado em {publico_alvo}
+                        - **Interesses:** {ramo_atuacao} relacionados
+                        - **Comportamento:** Compras online, mobile users
+                        '''
+                        
+                        plano_meta = modelo_midias.generate_content(prompt_meta_ads).text
+                        resultados['plano_meta'] = plano_meta
+                    
+                    # Plano Google Ads (com restrições)
+                    if foco_google:
+                        prompt_google_ads = f'''
+                        ## PLANO GOOGLE ADS (ESTRATÉGICO/LIMITADO) - {nome_cliente}
+                        
+                        **ORÇAMENTO:** R${orcamento_total*0.2:,.0f}
+                        **RESTRIÇÕES:** Uso focado em alto intento
+                        
+                        ### ESTRATÉGIA RESTRITA:
+                        1. **SEARCH ADS (70% do orçamento Google):**
+                           - Palavras-chave de conversão apenas
+                           - Brand terms protegidas
+                           - Competitor terms estratégicas
+                        
+                        2. **DISPLAY NETWORK (20% do orçamento Google):**
+                           - Remarketing apenas
+                           - Placements específicos
+                           - Exclusions agressivas
+                        
+                        3. **YOUTUBE (10% do orçamento Google):**
+                           - Vídeos curtos (<30s)
+                           - Skippable ads only
+                           - Remarketing viewers
+                        
+                        ### PALAVRAS-CHAVE ESTRATÉGICAS:
+                        - Foco em "intenção de compra"
+                        - Evitar termos muito amplos
+                        - Negativas agressivas
+                        '''
+                        
+                        plano_google = modelo_midias.generate_content(prompt_google_ads).text
+                        resultados['plano_google'] = plano_google
+                    
+                    # Planos para canais alternativos
+                    if foco_alternativos:
+                        # TikTok
+                        if usar_tiktok:
+                            prompt_tiktok = f'''
+                            ## PLANO TIKTOK - {nome_cliente}
+                            
+                            **PÚBLICO:** {publico_alvo}
+                            **ESTRATÉGIA:** Orgânico primeiro, ads depois
+                            
+                            ### CONTEÚDO ORGÂNICO (80% do esforço):
+                            1. **Trend Participation:** Participar em trends relevantes
+                            2. **Edu-tainment:** Educar de forma divertida
+                            3. **Behind Scenes:** Mostrar a empresa
+                            4. **User Challenges:** Desafios relacionados
+                            
+                            ### TIKTOK ADS (20% do esforço):
+                            - In-Feed ads nativos
+                            - Branded hashtag challenges (teste)
+                            - Creator partnerships micro-influencers
+                            
+                            ### MELHORES PRÁTICAS TIKTOK:
+                            - Vídeos curtos (15-60 segundos)
+                            - Legendas claras (áudio off)
+                            - Hook nos primeiros 3 segundos
+                            - CTA no vídeo
+                            '''
+                            
+                            plano_tiktok = modelo_midias.generate_content(prompt_tiktok).text
+                            resultados['plano_tiktok'] = plano_tiktok
+                        
+                        # Kwai
+                        if usar_kwai:
+                            prompt_kwai = f'''
+                            ## PLANO KWAI - {nome_cliente}
+                            
+                            **FOCO:** Classes C/D, cidades menores, interior
+                            **ESTRATÉGIA:** Conteúdo local e comunitário
+                            
+                            ### CARACTERÍSTICAS KWAI:
+                            - Público mais velho que TikTok
+                            - Forte em comunidades locais
+                            - Conteúdo familiar
+                            - Menos "produzido", mais autêntico
+                            
+                            ### ESTRATÉGIA DE CONTEÚDO:
+                            1. **Conteúdo Local:** Mostrar presença local
+                            2. **Testemunhos Reais:** Clientes reais, menos produção
+                            3. **Dicas Práticas:** Conteúdo útil do dia-a-dia
+                            4. **Interação:** Respostas diretas aos comentários
+                            
+                            ### DIFERENCIAIS KWAI:
+                            - Menos saturação de marcas
+                            - Engajamento mais autêntico
+                            - Custo potencialmente menor
+                            '''
+                            
+                            plano_kwai = modelo_midias.generate_content(prompt_kwai).text
+                            resultados['plano_kwai'] = plano_kwai
+                        
+                        # Pinterest
+                        if usar_pinterest:
+                            prompt_pinterest = f'''
+                            ## PLANO PINTEREST - {nome_cliente}
+                            
+                            **FOCO:** Inspiração, planejamento, descoberta
+                            **PÚBLICO:** Maioria mulheres, planejamento de compras
+                            
+                            ### ESTRATÉGIA PINTEREST:
+                            1. **SEO Visual:** Keywords em descrições
+                            2. **Idea Pins:** Conteúdo interativo
+                            3. **Shopping Pins:** Direto para produto
+                            4. **Boards Temáticos:** Organização por tema
+                            
+                            ### CONTEÚDO IDEAL:
+                            - Tutoriais visuais
+                            - Inspiração de uso
+                            - Moodboards temáticos
+                            - Infográficos simples
+                            
+                            ### METAS PINTEREST:
+                            - Tráfego qualificado para site
+                            - Inspiração pré-compra
+                            - Brand awareness visual
+                            '''
+                            
+                            plano_pinterest = modelo_midias.generate_content(prompt_pinterest).text
+                            resultados['plano_pinterest'] = plano_pinterest
+                    
+                    # 5. CRIATIVOS E PALAVRAS-CHAVE
+                    st.info("💡 Gerando ideias criativas e palavras-chave...")
+                    
+                    # Brainstorming de criativos
+                    prompt_criativos = f'''
+                    ## BRAINSTORMING DE CRIATIVOS - {nome_cliente}
+                    
+                    **PLATAFORMAS:** Meta, TikTok, Kwai, Google Display
+                    **PÚBLICO:** {publico_alvo}
+                    
+                    ### IDEIAS PARA META ADS:
+                    1. **Reels/Stories:**
+                       - "Antes e Depois" rápidos
+                       - Testemunhos em vídeo curtos
+                       - Demonstrações de produto em ação
+                       - Perguntas interativas
+                    
+                    2. **Feed/Carrossel:**
+                       - Benefícios em bullets visuais
+                       - Comparação vs concorrentes
+                       - Oferta limitada destacada
+                       - Social proof (avaliações)
+                    
+                    ### IDEIAS PARA TIKTOK/KWAI:
+                    1. **Formatos Naturais:**
+                       - "Um dia usando [produto]"
+                       - Respondendo dúvidas comuns
+                       - Participando em trends
+                       - Conteúdo "faça você mesmo"
+                    
+                    2. **Estilo de Produção:**
+                       - Smartphone quality (autêntico)
+                       - Legendas grandes
+                       - Músicas populares
+                       - Transições simples
+                    
+                    ### IDEIAS PARA GOOGLE DISPLAY:
+                    1. **Banners Responsivos:**
+                       - Mensagem única e clara
+                       - CTA direto
+                       - Imagem de alta qualidade
+                       - Logotipo visível
+                    '''
+                    
+                    criativos_output = modelo_midias.generate_content(prompt_criativos).text
+                    resultados['criativos'] = criativos_output
+                    
+                    # Palavras-chave
+                    prompt_palavras_chave = f'''
+                    ## PALAVRAS-CHAVE ESTRATÉGICAS - {nome_cliente}
+                    
+                    **RAMO:** {ramo_atuacao}
+                    **OBJETIVOS:** {', '.join(objetivos_de_marca)}
+                    
+                    ### PARA GOOGLE SEARCH (foco em conversão):
+                    1. **BRANDED:**
+                       - {nome_cliente}
+                       - "{nome_cliente} preço"
+                       - "{nome_cliente} como usar"
+                    
+                    2. **GENERIC HIGH-INTENT:**
+                       - "comprar {ramo_atuacao}"
+                       - "melhor {ramo_atuacao}"
+                       - "{ramo_atuacao} barato"
+                    
+                    3. **LONG-TAIL:**
+                       - "{ramo_atuacao} para {publico_alvo.split(',')[0]}"
+                       - "como escolher {ramo_atuacao}"
+                       - "benefícios de {ramo_atuacao}"
+                    
+                    ### PARA META ADS INTERESTS:
+                    1. **INTERESSES RELACIONADOS:**
+                       - {ramo_atuacao}
+                       - Marcas concorrentes
+                       - Problemas que o produto resolve
+                    
+                    2. **COMPORTAMENTOS:**
+                       - Compradores online
+                       - Usuários mobile
+                       - Seguidores de páginas similares
+                    '''
+                    
+                    palavras_chave_output = modelo_midias.generate_content(prompt_palavras_chave).text
+                    resultados['palavras_chave'] = palavras_chave_output
+                    
+                    # EXIBIR RESULTADOS
+                    st.success("✅ Planejamento de mídias concluído com sucesso!")
+                    
+                    # Criar abas para os resultados
+                    tab_result1, tab_result2, tab_result3, tab_result4, tab_result5, tab_result6 = st.tabs([
+                        "🎯 Resumo Executivo", 
+                        "🎨 Key Visual", 
+                        "📱 Planos por Plataforma", 
+                        "📝 Estratégia de Conteúdo", 
+                        "💡 Criativos", 
+                        "💾 Exportar"
+                    ])
+                    
+                    with tab_result1:
+                        st.header("📊 Resumo Executivo")
+                        
+                        st.subheader("💰 Distribuição Orçamentária")
+                        col_res1, col_res2, col_res3 = st.columns(3)
+                        with col_res1:
+                            st.metric("Meta Ads", f"R${orcamento_total*0.7:,.0f}", "70%")
+                        with col_res2:
+                            st.metric("Google Ads", f"R${orcamento_total*0.2:,.0f}", "20%")
+                        with col_res3:
+                            st.metric("Canais Alternativos", f"R${orcamento_total*0.1:,.0f}", "10%")
+                        
+                        st.subheader("📈 Cronograma Sugerido")
+                        st.markdown("""
+                        **Mês 1:** 
+                        - Meta Ads ativo (prospecção)
+                        - Google Search (palavras-chave estratégicas)
+                        - Setup básico canais alternativos
+                        
+                        **Mês 2:**
+                        - Adicionar remarketing Meta/Google
+                        - Testes TikTok/Kwai
+                        - Otimização baseada em dados
+                        
+                        **Mês 3:**
+                        - Escalar o que funciona
+                        - Refinar segmentações
+                        - Testar novos formatos
+                        """)
+                        
+                        st.subheader("🎯 KPIs Principais")
+                        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+                        with col_kpi1:
+                            st.write("**Meta Ads:**")
+                            st.write("- CPA")
+                            st.write("- ROAS")
+                            st.write("- CTR")
+                        with col_kpi2:
+                            st.write("**Google Ads:**")
+                            st.write("- CPC")
+                            st.write("- Conversões")
+                            st.write("- Impression Share")
+                        with col_kpi3:
+                            st.write("**Alternativos:**")
+                            st.write("- Engajamento")
+                            st.write("- Views")
+                            st.write("- Custo por View")
+                    
+                    with tab_result2:
+                        st.header("🎨 Key Visual para Mídias Sociais")
+                        st.markdown(resultados['key_visual'])
+                    
+                    with tab_result3:
+                        st.header("📱 Planos Específicos por Plataforma")
+                        
+                        if foco_meta:
+                            st.subheader("✅ Meta Ads (Principal)")
+                            st.markdown(resultados.get('plano_meta', 'Plano não gerado'))
+                            st.divider()
+                        
+                        if foco_google:
+                            st.subheader("⚠️ Google Ads (Estratégico)")
+                            st.markdown(resultados.get('plano_google', 'Plano não gerado'))
+                            st.divider()
+                        
+                        if foco_alternativos:
+                            if usar_tiktok:
+                                st.subheader("🚀 TikTok")
+                                st.markdown(resultados.get('plano_tiktok', 'Plano não gerado'))
+                                st.divider()
+                            
+                            if usar_kwai:
+                                st.subheader("🚀 Kwai")
+                                st.markdown(resultados.get('plano_kwai', 'Plano não gerado'))
+                                st.divider()
+                            
+                            if usar_pinterest:
+                                st.subheader("🚀 Pinterest")
+                                st.markdown(resultados.get('plano_pinterest', 'Plano não gerado'))
+                    
+                    with tab_result4:
+                        st.header("📝 Estratégia de Conteúdo")
+                        st.markdown(resultados['estrategia_conteudo'])
+                    
+                    with tab_result5:
+                        st.header("💡 Brainstorming de Criativos")
+                        st.markdown(resultados['criativos'])
+                        
+                        st.subheader("🔑 Palavras-chave Estratégicas")
+                        st.markdown(resultados['palavras_chave'])
+                    
+                    with tab_result6:
+                        st.header("💾 Exportar Planejamento")
+                        
+                        # Criar documento consolidado
+                        documento_completo = f"""
+                        # 📱 PLANEJAMENTO DE MÍDIAS - {nome_cliente}
+                        
+                        **Data:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}
+                        **Cliente:** {nome_cliente}
+                        **Ramo:** {ramo_atuacao}
+                        **Orçamento Total:** R${orcamento_total:,}
+                        **Período:** {periodo_campanha}
+                        **Público-alvo:** {publico_alvo}
+                        
+                        ---
+                        
+                        ## 🎯 OBJETIVOS
+                        {chr(10).join([f"- {obj}" for obj in objetivos_de_marca])}
+                        
+                        ---
+                        
+                        ## 🎨 KEY VISUAL
+                        {resultados['key_visual']}
+                        
+                        ---
+                        
+                        ## 📊 PLANO MACRO
+                        {resultados['plano_macro']}
+                        
+                        ---
+                        
+                        ## 📱 PLANOS POR PLATAFORMA
+                        
+                        ### ✅ META ADS (70% do orçamento)
+                        {resultados.get('plano_meta', 'Não aplicável')}
+                        
+                        ### ⚠️ GOOGLE ADS (20% do orçamento)
+                        {resultados.get('plano_google', 'Não aplicável')}
+                        
+                        ### 🚀 CANAIS ALTERNATIVOS (10% do orçamento)
+                        """
+                        
+                        # Adicionar planos alternativos se existirem
+                        if foco_alternativos:
+                            if usar_tiktok:
+                                documento_completo += f"\n\n**TikTok:**\n{resultados.get('plano_tiktok', '')}"
+                            if usar_kwai:
+                                documento_completo += f"\n\n**Kwai:**\n{resultados.get('plano_kwai', '')}"
+                            if usar_pinterest:
+                                documento_completo += f"\n\n**Pinterest:**\n{resultados.get('plano_pinterest', '')}"
+                        
+                        documento_completo += f"""
+                        
+                        ---
+                        
+                        ## 📝 ESTRATÉGIA DE CONTEÚDO
+                        {resultados['estrategia_conteudo']}
+                        
+                        ---
+                        
+                        ## 💡 CRIATIVOS
+                        {resultados['criativos']}
+                        
+                        ---
+                        
+                        ## 🔑 PALAVRAS-CHAVE
+                        {resultados['palavras_chave']}
+                        
+                        ---
+                        
+                        ## 🔍 PESQUISAS DE MERCADO
+                        
+                        ### Concorrentes:
+                        {pesquisa_concorrentes[:1000]}...
+                        
+                        ### Tendências:
+                        {pesquisa_tendencias[:1000]}...
+                        
+                        ### Público-alvo:
+                        {pesquisa_publico[:1000]}...
+                        
+                        ---
+                        
+                        *Planejamento gerado automaticamente pelo Sistema Agente BD*
+                        """
+                        
+                        # Botões de download
+                        col_dl1, col_dl2, col_dl3 = st.columns(3)
+                        
+                        with col_dl1:
+                            st.download_button(
+                                "📄 Baixar TXT Completo",
+                                data=documento_completo,
+                                file_name=f"planejamento_midias_{nome_cliente}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                                mime="text/plain",
+                                key="download_txt_midias"
+                            )
+                        
+                        with col_dl2:
+                            # Criar resumo executivo
+                            resumo_executivo = f"""
+                            # RESUMO EXECUTIVO - PLANEJAMENTO DE MÍDIAS
+                            
+                            **Cliente:** {nome_cliente}
+                            **Data:** {datetime.datetime.now().strftime('%d/%m/%Y')}
+                            
+                            ## DISTRIBUIÇÃO ORÇAMENTÁRIA
+                            - Meta Ads: R${orcamento_total*0.7:,.0f} (70%)
+                            - Google Ads: R${orcamento_total*0.2:,.0f} (20%)
+                            - Canais Alternativos: R${orcamento_total*0.1:,.0f} (10%)
+                            
+                            ## PRINCIPAIS AÇÕES
+                            1. Meta Ads como canal principal
+                            2. Google Ads focado em alto intento
+                            3. Teste em TikTok/Kwai/Pinterest
+                            
+                            ## CRONOGRAMA
+                            - Mês 1: Lançamento e prospecção
+                            - Mês 2: Otimização e testes
+                            - Mês 3: Escalabilidade
+                            
+                            ## KPIs CHAVE
+                            - Meta: CPA, ROAS, CTR
+                            - Google: CPC, Conversões
+                            - Alternativos: Engajamento, Views
+                            """
+                            
+                            st.download_button(
+                                "📋 Baixar Resumo",
+                                data=resumo_executivo,
+                                file_name=f"resumo_midias_{nome_cliente}_{datetime.datetime.now().strftime('%Y%m%d')}.txt",
+                                mime="text/plain",
+                                key="download_resumo_midias"
+                            )
+                        
+                        with col_dl3:
+                            # Botão para salvar no MongoDB
+                            if st.button("💾 Salvar no Banco", type="primary", use_container_width=True):
+                                salvo = save_to_mongo_midias(
+                                    resultados['key_visual'],
+                                    resultados['plano_macro'],
+                                    resultados.get('plano_meta', ''),
+                                    resultados.get('plano_google', ''),
+                                    resultados.get('plano_tiktok', ''),
+                                    resultados.get('plano_kwai', ''),
+                                    resultados.get('plano_pinterest', ''),
+                                    resultados['criativos'],
+                                    resultados['palavras_chave'],
+                                    resultados['estrategia_conteudo'],
+                                    nome_cliente
+                                )
+                                
+                                if salvo:
+                                    st.balloons()
+                                    st.success("✅ Planejamento salvo no banco de dados!")
+                
+                except Exception as e:
+                    st.error(f"❌ Erro durante o planejamento de mídias: {str(e)}")
                     st.info("💡 Tente novamente com informações mais específicas ou verifique sua conexão com a API do Gemini.")
