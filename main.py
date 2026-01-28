@@ -923,12 +923,11 @@ if agentes:
 # Menu de abas - DETERMINAR QUAIS ABAS MOSTRAR
 abas_base = [
     "💬 Chat", 
-    "⚙️ Gerenciar Agentes",
     "📓 Diário de Bordo",
     "✅ Validação Unificada",
     "✨ Geração de Conteúdo",
     "📝 Revisão Ortográfica",
-    "Monitoramento de Redes",
+    "💬 Monitoramento de Redes",
     "🚀 Otimização de Conteúdo",
     "📅 Criadora de Calendário",
     "📊 Planejamento Estratégico",
