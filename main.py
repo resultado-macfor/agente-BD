@@ -788,64 +788,7 @@ def is_syn_agent(agent_name):
     """Verifica se o agente é da baseado no nome"""
     return agent_name and any(keyword in agent_name.upper() for keyword in ['SYN'])
 
-PRODUCT_DESCRIPTIONS = {
-    "FORTENZA": "Tratamento de sementes inseticida, focado no Cerrado e posicionado para controle do complexo de lagartas e outras pragas iniciais. Comunicação focada no mercado 'on farm' (tratamento feito na fazenda).",
-    "ALADE": "Fungicida para controle de doenças em soja, frequentemente posicionado em programa com Mitrion para controle de podridões de vagens e grãos.",
-    "VERDAVIS": "Inseticida e acaricida composto por PLINAZOLIN® technology (nova molécula, novo grupo químico, modo de ação inédito) + lambda-cialotrina. KBFs: + mais choque, + mais espectro e + mais dias de controle.",
-    "ENGEO PLENO S": "Inseticida de tradição, referência no controle de percevejos. Mote: 'Nunca foi sorte. Sempre foi Engeo Pleno S'.",
-    "MEGAFOL": "Bioativador da Syn Biologicals. Origem 100% natural (extratos vegetais e de algas Ascophyllum nodosum). Desenvolvido para garantir que a planta alcance todo seu potencial produtivo.",
-    "MIRAVIS DUO": "Fungicida da família Miravis. Traz ADEPIDYN technology (novo ingrediente ativo, novo grupo químico). Focado no controle de manchas foliares.",
-    "AVICTA COMPLETO": "Oferta comercial de tratamento industrial de sementes (TSI). Composto por inseticida, fungicida e nematicida.",
-    "MITRION": "Fungicida para controle de doenças em soja, frequentemente posicionado em programa com Alade.",
-    "AXIAL": "Herbicida para trigo. Composto por um novo ingrediente ativo. Foco no controle do azevém.",
-    "CERTANO": "Bionematicida e biofungicida. Composto pela bactéria Bacillus velezensis. Controla nematoides e fungos de solo.",
-    "MANEJO LIMPO": "Programa da Syn para manejo integrado de plantas daninhas.",
-    "ELESTAL NEO": "Fungicida para controle de doenças em soja e algodão.",
-    "FRONDEO": "Inseticida para cana-de-açúcar com foco no controle da broca da cana.",
-    "FORTENZA ELITE": "Oferta comercial de TSI. Solução robusta contre pragas, doenças e nematoides do Cerrado.",
-    "REVERB": "Produto para manejo de doenças em soja e milho com ação prolongada ou de espectro amplo.",
-    "YIELDON": "Produto focado em maximizar a produtividade das lavouras.",
-    "ORONDIS FLEXI": "Fungicida com flexibilidade de uso para controle de requeima, míldios e manchas.",
-    "RIZOLIQ LLI": "Inoculante ou produto para tratamento de sementes que atua na rizosfera.",
-    "ARVATICO": "Fungicida ou inseticida com ação específica para controle de doenças foliares ou pragas.",
-    "VERDADERO": "Produto relacionado à saúde do solo ou nutrição vegetal.",
-    "MIRAVIS": "Fungicida da família Miravis para controle de doenças.",
-    "MIRAVIS PRO": "Fungicida premium da família Miravis para controle avançado de doenças.",
-    "INSTIVO": "Lagarticida posicionado como especialista no controle de lagartas do gênero Spodoptera.",
-    "CYPRESS": "Fungicida posicionado para últimas aplicações na soja, consolidando o manejo de doenças.",
-    "CALARIS": "Herbicida composto por atrazina + mesotriona para controle de plantas daninhas no milho.",
-    "SPONTA": "Inseticida para algodão com PLINAZOLIN® technology para controle de bicudo e outras pragas.",
-    "INFLUX": "Inseticida lagarticida premium para controle de todas as lagartas, especialmente helicoverpa.",
-    "JOINER": "Inseticida acaricida com tecnologia PLINAZOLIN para culturas hortifrúti.",
-    "DUAL GOLD": "Herbicida para manejo de plantas daninhas.",
-}
 
-def extract_product_info(text: str) -> Tuple[str, str, str]:
-    """Extrai informações do produto do texto da célula"""
-    if not text or not text.strip():
-        return None, None, None
-    
-    text = str(text).strip()
-    
-    # Remover emojis e marcadores
-    clean_text = re.sub(r'[🔵🟠🟢🔴🟣🔃📲]', '', text).strip()
-    
-    # Padrões para extração
-    patterns = {
-        'product': r'\b([A-Z][A-Za-z\s]+(?:PRO|S|NEO|LLI|ELITE|COMPLETO|DUO|FLEXI|PLENO|XTRA)?)\b',
-        'culture': r'\b(soja|milho|algodão|cana|trigo|HF|café|citrus|batata|melão|uva|tomate|multi)\b',
-        'action': r'\b(depoimento|resultados|série|reforço|controle|lançamento|importância|jornada|conceito|vídeo|ação|diferenciais|awareness|problemática|glossário|manejo|aplicação|posicionamento)\b'
-    }
-    
-    product_match = re.search(patterns['product'], clean_text, re.IGNORECASE)
-    culture_match = re.search(patterns['culture'], clean_text, re.IGNORECASE)
-    action_match = re.search(patterns['action'], clean_text, re.IGNORECASE)
-    
-    product = product_match.group(1).strip().upper() if product_match else None
-    culture = culture_match.group(0).lower() if culture_match else "multi"
-    action = action_match.group(0).lower() if action_match else "conscientização"
-    
-    return product, culture, action
 
 def generate_context(content, product_name, culture, action, data_input, formato_principal):
     """Gera o texto de contexto discursivo usando LLM"""
@@ -861,17 +804,15 @@ def generate_context(content, product_name, culture, action, data_input, formato
     mes = meses[data_input.month]
     
     prompt = f"""
-    Como redator especializado em agronegócio da Syn, elabore um texto contextual discursivo de 3-4 parágrafos para uma pauta de conteúdo.
+    Como redator, Elabore um texto contextual discursivo de 3-4 parágrafos para uma pauta de conteúdo.
 
     Informações da pauta:
     - Produto: {product_name}
-    - Cultura: {culture}
     - Ação/tema: {action}
     - Mês de publicação: {mes}
     - Formato principal: {formato_principal}
     - Conteúdo original: {content}
 
-    Descrição do produto: {PRODUCT_DESCRIPTIONS.get(product_name, 'Produto agrícola')}
 
     Instruções:
     - Escreva em formato discursivo e fluido, com 3-4 parágrafos bem estruturados
@@ -900,10 +841,7 @@ def generate_platform_strategy(product_name, culture, action, content):
     Como especialista em mídias sociais para o agronegócio, crie uma estratégia de conteúdo detalhada:
 
     PRODUTO: {product_name}
-    CULTURA: {culture}
-    AÇÃO: {action}
     CONTEÚDO ORIGINAL: {content}
-    DESCRIÇÃO DO PRODUTO: {PRODUCT_DESCRIPTIONS.get(product_name, 'Produto agrícola')}
 
     FORNECER ESTRATÉGIA PARA:
     - Instagram (Feed, Reels, Stories)
@@ -911,7 +849,6 @@ def generate_platform_strategy(product_name, culture, action, content):
     - LinkedIn
     - WhatsApp Business
     - YouTube
-    - Portal Mais Agro (blog)
 
     INCLUIR PARA CADA PLATAFORMA:
     1. Tipo de conteúdo recomendado
@@ -1010,6 +947,7 @@ abas_base = [
     "Monitoramento de Redes",
     "🚀 Otimização de Conteúdo",
     "📅 Criadora de Calendário",
+    "📊 Planejamento Estratégico",
 ]
 
 if is_syn_agent(agente_selecionado['nome']):
@@ -7863,3 +7801,766 @@ with tab_mapping["📓 Diário de Bordo"]:
                     
                     except Exception as e:
                         st.error(f"❌ Erro ao gerar análise: {str(e)}")
+
+# --- ADICIONAR APÓS A ABA DE CRIADORA DE CALENDÁRIO ---
+with tab_mapping["📊 Planejamento Estratégico"]:
+    st.header("📊 Planejamento Estratégico")
+    st.markdown("""
+    Aqui é gerado o planejamento de Pesquisa e Estratégia. 
+    Geramos análise SWOT, análise PEST, análise de concorrências, Golden Circle, 
+    Posicionamento de marca, Brand Persona, Buyer Persona e Tom de Voz
+    """)
+    
+    # Importar uuid
+    import uuid
+    
+    # Funções do MongoDB
+    def gerar_id_planejamento():
+        return str(uuid.uuid4())
+    
+    def save_to_mongo_MKT(SWOT_output, PEST_output, concorrencias_output, golden_output, 
+                         posicionamento_output, brand_persona_output, buyer_persona_output, 
+                         tom_output, nome_cliente):
+        """Salva o planejamento estratégico no MongoDB"""
+        try:
+            client2 = MongoClient("mongodb+srv://gustavoromao3345:RqWFPNOJQfInAW1N@cluster0.5iilj.mongodb.net/auto_doc?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE&tlsAllowInvalidCertificates=true")
+            db = client2['arquivos_planejamento']
+            collection = db['auto_doc']
+            
+            id_planejamento = gerar_id_planejamento()
+            
+            task_outputs = {
+                "id_planejamento": f'Plano_Estrategico_{nome_cliente}_{id_planejamento}',
+                "nome_cliente": nome_cliente,
+                "tipo_plano": 'Plano Estratégico',
+                "data_criacao": datetime.datetime.now(),
+                "Etapa_1_Pesquisa_Mercado": {
+                    "Análise_SWOT": SWOT_output,
+                    "Análise_PEST": PEST_output,
+                    "Análise_Concorrência": concorrencias_output,
+                },
+                "Etapa_2_Estrategica": {
+                    "Golden_Circle": golden_output,
+                    "Posicionamento_Marca": posicionamento_output,
+                    "Brand_Persona": brand_persona_output,
+                    "Buyer_Persona": buyer_persona_output,
+                    "Tom_de_Voz": tom_output,
+                }
+            }
+            
+            collection.insert_one(task_outputs)
+            st.success(f"✅ Planejamento gerado com sucesso e salvo no banco de dados!")
+            return True
+        except Exception as e:
+            st.error(f"❌ Erro ao salvar no MongoDB: {str(e)}")
+            return False
+    
+    # Configuração do Gemini
+    gemini_api_key = os.getenv("GEM_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        modelo_planejamento = genai.GenerativeModel("gemini-2.0-flash")
+    else:
+        st.error("❌ GEM_API_KEY não encontrada nas variáveis de ambiente")
+        st.stop()
+    
+    # Textos explicativos
+    exp_golden = '''
+    Comunique seu 'porquê' aos seus clientes
+
+    Sinek explica que o 'Porquê' é provavelmente a mensagem mais importante que uma organização ou indivíduo pode comunicar, pois é isso que inspira os outros a agir. "Comece pelo Porquê" é a forma de explicar seu propósito, a razão pela qual você existe e se comporta como se comporta. A teoria de Sinek é que comunicar com sucesso a paixão por trás do 'Porquê' é uma maneira de se conectar com o cérebro límbico do ouvinte. Essa é a parte do nosso cérebro que processa sentimentos como confiança e lealdade – além de ser responsável pela tomada de decisões.
+
+    Articular com sucesso seu 'Porquê' é uma maneira muito impactante de se comunicar com outras pessoas, definir sua proposta de valor específica e inspirá-las a agir. Sinek argumenta que comunicar o 'Porquê' ativa a parte do cérebro que influencia o comportamento. É por isso que o modelo do Círculo Dourado é considerado uma teoria tão influente de liderança. No nível organizacional, comunicar seu 'Porquê' é a base de uma proposta de valor forte que diferenciará sua marca das demais.
+
+    Anthony Villis apresenta um visual útil no blog First Wealth, relacionando os objetivos do Círculo Dourado à resposta psicológica.
+
+    Como
+    Os fatores do 'Como' de uma organização podem incluir seus pontos fortes ou valores que a diferenciam da concorrência. Sinek afirma que a mensagem do 'Como' também pode se comunicar com o cérebro límbico – a parte importante que governa o comportamento e a emoção. No entanto, ele defende que as organizações deveriam melhorar a forma como articulam seu 'Porquê', além do 'Como'.
+
+    O que
+    É relativamente fácil para qualquer líder ou organização articular 'O que' fazem. Isso pode ser expresso pelos produtos que uma empresa vende ou pelos serviços que oferece. Para um indivíduo, seria seu cargo. Sinek argumenta que a comunicação do 'O que' envolve apenas o neocórtex – a parte racional do nosso cérebro. Ele acredita que essa parte do cérebro tem um papel menor na tomada de decisões em comparação ao cérebro límbico, que é alcançado melhor pelo 'Porquê' e pelo 'Como'. Pessoas e organizações bem-sucedidas expressam por que fazem o que fazem, em vez de se concentrarem apenas no que fazem.
+    '''
+    
+    # Formulário de entrada de dados
+    st.markdown("### 📋 Informações do Cliente")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        nome_cliente = st.text_input('Nome do Cliente:', 
+                                   help="Digite o nome do cliente que será planejado. Ex: 'Empresa XYZ'",
+                                   key="nome_cliente_planejamento")
+        site_cliente = st.text_input('Site do Cliente:', key="site_cliente_planejamento")
+        ramo_atuacao = st.text_input('Ramo de Atuação:', key="ramo_atuacao_planejamento")
+    
+    with col2:
+        intuito_plano = st.text_input('Intuito do Planejamento estratégico:', 
+                                    placeholder="Ex: Aumentar as vendas em 30% no próximo trimestre...",
+                                    key="intuito_plano_planejamento")
+        publico_alvo = st.text_input('Público alvo:', 
+                                   placeholder="Ex: Jovens de 18 a 25 anos, interessados em moda...",
+                                   key="publico_alvo_planejamento")
+    
+    st.markdown("### 🏆 Objetivos e Sucesso")
+    
+    objetivos_opcoes = [
+        'Criar ou aumentar relevância, reconhecimento e autoridade para a marca',
+        'Entregar potenciais consumidores para a área comercial',
+        'Venda, inscrição, cadastros, contratação ou qualquer outra conversão final do público',
+        'Fidelizar e reter um público fiel já convertido',
+        'Garantir que o público esteja engajado com os canais ou ações da marca'
+    ]
+    
+    objetivos_de_marca = st.selectbox('Quais são os objetivos da sua marca?', 
+                                    objetivos_opcoes, 
+                                    key="objetivos_marca_planejamento")
+    
+    referencia_da_marca = st.text_area('Referência de marca:', 
+                                     placeholder="Conte um pouco mais sobre sua marca, o que ela representa, seus valores e diferenciais no mercado...",
+                                     height=100,
+                                     key="referencia_da_marca_planejamento")
+    
+    sucesso = st.text_input('O que é sucesso para a marca?:', 
+                          help='Redija aqui um texto que define o que a marca considera como sucesso.',
+                          key="sucesso_planejamento")
+    
+    st.markdown("### 🥊 Concorrência")
+    
+    concorrentes = st.text_input('Concorrentes:', 
+                               placeholder="Ex: Loja A, Loja B, Loja C. Liste os concorrentes mais relevantes...",
+                               key="concorrentes_planejamento")
+    
+    site_concorrentes = st.text_input('Site dos concorrentes:', 
+                                    placeholder="Ex: www.loja-a.com.br, www.loja-b.com.br, www.loja-c.com.br",
+                                    key="site_concorrentes_planejamento")
+    
+    st.markdown("### 📄 Referências de Mercado (opcional)")
+    
+    pest_files = st.file_uploader("Escolha arquivos de PDF para referência de mercado", 
+                                type=["pdf"], 
+                                accept_multiple_files=True,
+                                help="Arquivos PDF com dados de mercado, pesquisas, etc.",
+                                key="pest_files_planejamento")
+    
+    # Botão para iniciar planejamento
+    if st.button("🚀 Iniciar Planejamento Estratégico", type="primary", use_container_width=True, key="iniciar_planejamento"):
+        # Validação dos campos obrigatórios
+        campos_obrigatorios = [nome_cliente, ramo_atuacao, intuito_plano, publico_alvo]
+        nomes_campos = ["Nome do Cliente", "Ramo de Atuação", "Intuito do Planejamento", "Público-alvo"]
+        
+        campos_faltando = []
+        for campo, nome in zip(campos_obrigatorios, nomes_campos):
+            if not campo or campo.strip() == "":
+                campos_faltando.append(nome)
+        
+        if campos_faltando:
+            st.error(f"❌ Por favor, preencha os seguintes campos obrigatórios: {', '.join(campos_faltando)}")
+        else:
+            with st.spinner("🔍 Iniciando pesquisa e análise de mercado..."):
+                try:
+                    # Inicializar variáveis para resultados
+                    resultados = {}
+                    
+                    # 1. PESQUISAS WEB COM PERPLEXITY (usando a função realizar_busca_web_com_fontes)
+                    st.info("🌐 Realizando pesquisas web...")
+                    
+                    # Construir contexto do agente para as pesquisas
+                    contexto_agente_pesquisa = ""
+                    if st.session_state.agente_selecionado:
+                        agente_atual = st.session_state.agente_selecionado
+                        contexto_agente_pesquisa = construir_contexto(
+                            agente_atual, 
+                            st.session_state.segmentos_selecionados if hasattr(st.session_state, 'segmentos_selecionados') else []
+                        )
+                    
+                    # Criar container para as pesquisas
+                    pesquisa_container = st.container()
+                    
+                    with pesquisa_container:
+                        # Pesquisa política
+                        st.write("📰 **Pesquisa política e regulatória...**")
+                        pls = realizar_busca_web_com_fontes(
+                            f"notícias políticas recentes sobre o Brasil 2024 que podem afetar o setor de {ramo_atuacao}",
+                            contexto_agente_pesquisa
+                        )
+                        
+                        # Pesquisa econômica
+                        st.write("💰 **Pesquisa econômica e de mercado...**")
+                        dados_econ_brasil = realizar_busca_web_com_fontes(
+                            f"dados econômicos recentes sobre o Brasil 2024 PIB inflação setor {ramo_atuacao} tendências mercado",
+                            contexto_agente_pesquisa
+                        )
+                        
+                        # Pesquisa sobre concorrentes (se houver)
+                        if concorrentes and concorrentes.strip():
+                            st.write("🏢 **Pesquisa sobre concorrentes...**")
+                            novids_conc = realizar_busca_web_com_fontes(
+                                f"notícias mais recentes sobre os concorrentes: {concorrentes} no setor de {ramo_atuacao}",
+                                contexto_agente_pesquisa
+                            )
+                        else:
+                            novids_conc = "Nenhum concorrente informado para pesquisa."
+                        
+                        # Pesquisa social
+                        st.write("👥 **Pesquisa social e demográfica...**")
+                        tend_social_duck = realizar_busca_web_com_fontes(
+                            f"novidades no âmbito social brasileiro 2024 que afetam o setor de {ramo_atuacao} tendências sociais demográficas",
+                            contexto_agente_pesquisa
+                        )
+                        
+                        # Pesquisa tecnológica
+                        st.write("🔬 **Pesquisa tecnológica e inovação...**")
+                        tec = realizar_busca_web_com_fontes(
+                            f"novidades tecnológicas no ramo de {ramo_atuacao} 2024 tendências inovações tecnologias emergentes",
+                            contexto_agente_pesquisa
+                        )
+                    
+                    # Armazenar pesquisas para uso posterior
+                    pesquisas = {
+                        'politica': pls,
+                        'economia': dados_econ_brasil,
+                        'concorrentes': novids_conc,
+                        'social': tend_social_duck,
+                        'tecnologica': tec
+                    }
+                    
+                    # Verificar se as pesquisas tiveram sucesso
+                    erros_pesquisa = []
+                    for nome, resultado in pesquisas.items():
+                        if resultado.startswith("❌") or resultado.startswith("⚠️"):
+                            erros_pesquisa.append(nome)
+                    
+                    if erros_pesquisa:
+                        st.warning(f"⚠️ Algumas pesquisas tiveram problemas: {', '.join(erros_pesquisa)}. Continuando com os dados disponíveis.")
+                    
+                    # 2. ANÁLISE SWOT
+                    st.info("📊 Gerando análise SWOT...")
+                    
+                    prompt_SWOT = f'''Assumindo um especialista em administração de marketing, extraia todo o conhecimento existente sobre marketing em um nível extremamente aprofundado.
+                    
+                    Para o cliente {nome_cliente}, Considerando o seguinte contexto a referência da marca:
+                                {referencia_da_marca}, para o cliente no ramo de atuação {ramo_atuacao}. E considerando o que a marca considera como sucesso em ({sucesso}) e os objetivos de marca ({objetivos_de_marca}):
+                                realize a Análise SWOT completa em português brasileiro. 
+                                Elabore 10 pontos em cada segmento da análise SWOT. Pontos relevantes que irão alavancar insights poderosos no planejamento de marketing. 
+                                Cada ponto deve ser pelo menos 3 frases detalhadas, profundas e não genéricas. 
+                                Você está aqui para trazer conhecimento estratégico. organize os pontos em bullets
+                                pra ficarem organizados dentro de cada segmento da tabela.'''
+                    
+                    pre_SWOT_output = modelo_planejamento.generate_content(prompt_SWOT).text
+                    
+                    # Melhorar a análise SWOT
+                    prompt_melhorar_SWOT = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor. Não seja genérico. Não seja vago. Seja prático.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Reescreva a seguinte análise SWOT menos genérica e mais relevante: {pre_SWOT_output}'''
+                    
+                    SWOT_output = modelo_planejamento.generate_content(prompt_melhorar_SWOT).text
+                    
+                    # Avaliador SWOT
+                    prompt_avaliador_SWOT = f'''
+                    ###SISTEMA###
+                    Você é um expert em analisar análises SWOT e apontar como elas podem melhorar. Você não inventa informações.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Considerando o output de análise SWOT, proponha melhoras para que ele fique menos genérico
+                            e melhor redijido: {SWOT_output}'''
+                    
+                    SWOT_guides = modelo_planejamento.generate_content(prompt_avaliador_SWOT).text
+                    
+                    # SWOT final
+                    prompt_SWOT_final = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor. Mantenha o formato de uma análise SWOT.
+                    Essas são as melhorias propostas: {SWOT_guides}
+                    
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Considerando os guias de melhorias e o output prévio da análise SWOT: {SWOT_output}, 
+                    reescreva a análise SWOT melhorada.'''
+                    
+                    SWOT_final = modelo_planejamento.generate_content(prompt_SWOT_final).text
+                    resultados['SWOT'] = SWOT_final
+                    
+                    # 3. ANÁLISE DE CONCORRÊNCIA
+                    st.info("🥊 Analisando concorrência...")
+                    
+                    if concorrentes and concorrentes.strip():
+                        prompt_concorrencias = f'''Assumindo o papel um especialista em administração de marketing, extraia todo o conhecimento existente sobre marketing em um nível extremamente aprofundado.
+                                                
+                        - considerando o que a marca considera como sucesso em ({sucesso}) e os objetivos de marca ({objetivos_de_marca})
+                        -Considerando {concorrentes} como a concorrência direta de {nome_cliente}, redija sobre as notícias sobre o concorrente explicitadas em {novids_conc} e como o
+                        cliente {nome_cliente} pode superar isso. Aprofundando em um nível bem detalhado, com parágrafos para cada ponto extremamente bem
+                        explicado. Não seja superficial. Seja detalhista, comunicativo, aprofundado, especialista. Tenha um olhar sob a ótica de marketing, que é o foco de nossa empresa.
+                        Veja como {nome_cliente} pode se destacar em contraponto ao(s) concorrente(s) sob uma ótica estratégica de marketing. Traga impacto nas suas análises. Você é um especialista e está aqui para liderar nossos processos.'''
+                        
+                        concorrencias_output = modelo_planejamento.generate_content(prompt_concorrencias).text
+                    else:
+                        concorrencias_output = "Nenhuma informação de concorrência fornecida para análise."
+                    
+                    resultados['concorrencia'] = concorrencias_output
+                    
+                    # 4. ANÁLISE PEST (usando dados da busca web COM FONTES)
+                    st.info("🌍 Gerando análise PEST...")
+                    
+                    prompt_PEST = f'''Assumindo um especialista em administração de marketing.
+                                - considerando o que a marca considera como sucesso em ({sucesso}) e os objetivos de marca ({objetivos_de_marca})
+
+                    Análise PEST com pelo menos 10 pontos relevantes em cada etapa em português brasileiro 
+                                considerando os seguintes dados de pesquisa COM FONTES:
+                                
+                                CONTEXTO POLÍTICO (com fontes):
+                                {pls}
+                                
+                                DADOS ECONÔMICOS (com fontes):
+                                {dados_econ_brasil}
+                                
+                                CONTEXTO SOCIAL (com fontes):
+                                {tend_social_duck}
+                                
+                                CONTEXTO TECNOLÓGICO (com fontes):
+                                {tec}
+                                
+                                Quero pelo menos 10 pontos em cada segmento da análise PEST. Pontos relevantes que irão alavancar insights poderosos no planejamento de marketing.
+                                INCLUA AS FONTES das pesquisas quando relevante.'''
+                    
+                    pre_PEST_output = modelo_planejamento.generate_content(prompt_PEST).text
+                    
+                    # Melhorar análise PEST
+                    prompt_melhorar_PEST = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+                    
+                    Reescreva a seguinte análise PEST menos genérica, melhor redijida: {pre_PEST_output}'''
+                    
+                    PEST_output = modelo_planejamento.generate_content(prompt_melhorar_PEST).text
+                    
+                    # Avaliador PEST
+                    prompt_avaliador_PEST = f'''
+                    ###SISTEMA###
+                    Você é um expert em analisar análises PEST e apontar como elas podem melhorar. Você deve encontrar falhas na redação e ver como ela pode
+                    se tornar menos amadora. Você não inventa informações.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Considerando o output de análise PEST, proponha melhoras para que ele fique menos genérico
+                            e melhor redijido: {PEST_output}'''
+                    
+                    PEST_guides = modelo_planejamento.generate_content(prompt_avaliador_PEST).text
+                    
+                    # PEST final
+                    prompt_PEST_final = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor. Mantenha o formato de uma análise PEST.
+                    Essas são as melhorias propostas: {PEST_guides}
+                    
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+                    
+                    Considerando os guias de melhorias e o output prévio da análise PEST: {PEST_output}, 
+                    reescreva a análise PEST melhorada.'''
+                    
+                    PEST_final = modelo_planejamento.generate_content(prompt_PEST_final).text
+                    resultados['PEST'] = PEST_final
+                    
+                    # 5. GOLDEN CIRCLE
+                    st.info("🟡 Gerando Golden Circle...")
+                    
+                    prompt_golden = f'''
+                    Eis uma explicação sobre o que é golden circle: ({exp_golden});
+
+                    - não seja genérico
+                    - traga impacto com seu output
+                    - você é um especialista em administração de marketing; Você tem todo o conhecimento possível comparavel à Simon Sinek
+                    - Você está aqui para fazer a diferença
+                    - considerando o que a marca considera como sucesso em ({sucesso}) e os objetivos de marca ({objetivos_de_marca})
+                    - seja único. una o que torna o cliente {nome_cliente} de diferente em relação ao resto.
+
+                    Como um especialista em administração de marketing, gere um Golden Circle completo com 'how', 'why' e 'what' resumidos 
+                                em uma frase cada. Considerando e sintetizando de forma perspicaz o seguinte contexto 
+                                 e o objetivo do planejamento estratégico {intuito_plano},e a referência da marca:
+                                {referencia_da_marca}, a análise SWOT ({SWOT_final}).'''
+                    
+                    pre_golden_output = modelo_planejamento.generate_content(prompt_golden).text
+                    
+                    # Melhorar Golden Circle
+                    prompt_melhorar_golden = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+                    
+                    Reescreva o seguinte Golden Circle menos genérico, melhor redijido, com mais impacto (MANTENHA UMA ÚNICA FRASE PARA O HOW, WHAT e WHY): {pre_golden_output}'''
+                    
+                    golden_output = modelo_planejamento.generate_content(prompt_melhorar_golden).text
+                    resultados['golden'] = golden_output
+                    
+                    # 6. POSICIONAMENTO DE MARCA
+                    st.info("🎯 Gerando posicionamento de marca...")
+                    
+                    prompt_posicionamento = f'''
+                    - levando em conta a análise SWOT: ({SWOT_final}) e o golden circle: ({golden_output}) e considerando que a marca considera como sucesso: {sucesso}.
+                    - considerando os objetivos de marca ({objetivos_de_marca})
+                    - traga impacto, originalidade, sagacidade com seu retorno
+
+                    Gerar 1 Posicionamento de marca para o cliente {nome_cliente} do ramo de atuação {ramo_atuacao} Com um slogan com essas inspirações (que não
+                    devem ser copiadas, mas sim, usadas como referência na construção de um novo e original slogan) Seja original,
+                    esperto com as palavras na construção do slogan. Correlacione-as e crie impacto com a construção do seu slogan
+                    original. Tire ideias pulo do gato:
+
+                    Exemplos de bons slogans (não copie-os, apenas aprenda com eles o que é um bom slogan):
+                    
+                    "Pense diferente."
+                    "Abra a felicidade."
+                    "Just do it."
+                    "Acelere a transição do mundo para energia sustentável."
+                    "Amo muito tudo isso."
+                    "Red Bull te dá asas."
+                    "Compre tudo o que você ama."
+                    "Porque você vale muito."
+                    "Viva a vida ao máximo."
+                    "O melhor ou nada."
+                    "Organizar as informações do mundo e torná-las acessíveis e úteis."
+                    "A máquina de condução definitiva."
+                    "Onde os sonhos se tornam realidade."
+                    "Impossible is nothing."
+                    "Abra a boa cerveja."
+                    "Para um dia a dia melhor em casa."
+                    "Be moved."
+                    "Go further."
+                    "Inspire o mundo, crie o futuro."
+                    "Vamos juntos para o futuro.",
+
+                    e Uma frase detalhada.
+
+                    
+                    - O posicionamento de marca deve ter impacto, um tcham. Não seja genérico.
+                    - Me traga a lógica de como o posicionamento foi pensado. Me explique porque ele é como é. Justifique. Use base
+                    de conhecimento de marketing digital para justificá-lo.'''
+                    
+                    pre_posicionamento_output = modelo_planejamento.generate_content(prompt_posicionamento).text
+                    
+                    # Melhorar posicionamento
+                    prompt_melhorar_posicionamento = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir posicionamentos de marcas únicos e inéditos. De uma forma que relacionem
+                    a atividade fim da empresa e seus objetivos, assim como sua identidade. Você está aqui para reescrever um posicionamento de 
+                    marca de forma que ele fique simplesmente melhor, mais único, menos genérico, mais representativo, mais impactante.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+                    
+                    Reescreva o seguinte posicionamento de marca menos genérico, de melhor qualidade, com mais impacto: {pre_posicionamento_output}
+                    Você precisa fazer com que o posicionamento de marca torne a empresa {nome_cliente} de fato 'dono' do posicionamento.'''
+                    
+                    posicionamento_output = modelo_planejamento.generate_content(prompt_melhorar_posicionamento).text
+                    
+                    # Avaliador de posicionamento
+                    prompt_avaliador_posicionamento = f'''
+                    ###SISTEMA###
+                    Você é um expert em analisar posicionamento de marca e apontar como elas podem melhorar. Você não inventa informações.
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Considerando o output de posicionamento de marca, proponha melhoras para que ele fique menos genérico
+                            e melhor redijido: {posicionamento_output}'''
+                    
+                    posicionamento_guides = modelo_planejamento.generate_content(prompt_avaliador_posicionamento).text
+                    
+                    # Posicionamento final
+                    prompt_posicionamento_final = f'''
+                    ###SISTEMA###
+                    Você é um redator humano especialista em redijir planejamentos estratégicos, você
+                    irá receber como entrada etapas do planejamento estratégico e seu papel é aproximar
+                    essa entrada de uma saída de um especialista humano. Seu papel é tornar a entrada
+                    melhor e menos genérica. Apenas reescreva a entrada. Não fale o que você mudou. Apenas 
+                    reescreva o que você recebeu de entrada e a torne melhor. Mantenha o formato de um posicionamento de marca.
+                    Essas são as melhorias propostas: {posicionamento_guides}
+                    
+                    ###FIM DAS DIRETRIZES DE SISTEMA###
+
+                    Considerando os guias de melhorias e o output prévio do posicionamento: {posicionamento_output}, 
+                    reescreva o posicionamento de marca melhorado.'''
+                    
+                    posicionamento_final = modelo_planejamento.generate_content(prompt_posicionamento_final).text
+                    resultados['posicionamento'] = posicionamento_final
+                    
+                    # 7. BRAND PERSONA
+                    st.info("👤 Gerando Brand Persona...")
+                    
+                    prompt_brand_persona = f'''2 Brand Personas detalhada, alinhada com a marca do {nome_cliente} que é do setor de atuação {ramo_atuacao} em português brasileiro considerando o 
+                                seguinte contexto. Lembre que a brand persona é uma persona representativa da marca e da forma como ela se apresenta para o cliente. Ela deve ter o nome de uma pessoa comum. Ela é uma PESSOA que representa a marca.
+                                
+                                o objetivo do planejamento estratégico {intuito_plano},e a referência da marca:
+                                {referencia_da_marca}. 
+
+                                Essa persona deve representar a MARCA do cliente {nome_cliente}. É uma persona que incorpora a empresa em si. seus valores, forma de ser, ramo de atuação. Como a empresa se apresenta para o cliente.
+                                
+                                - Defina seu nome (deve ser o nome de uma pessoa normal como fernando pessoa, maria crivellari, etc)
+                                -Defina seu gênero, faixa de idade, qual a sua bagagem, defina sua personalidade. 
+                                -Defina suas características: possui filhos? É amigável? quais seus objetivos? qual seu repertório? O que gosta de fazer?
+                                -Comunicação: Como se expressa? Qual o seu tom? Qual o seu linguajar?
+
+                                -apresente demonstração de escuta ativa ou dados primários que justifiquem as escolhas estratégicas. Traga dores que não sejam superficiais. aprofunde no "por que" das personas. Incorpore esses pontos na construção das personas.
+                                
+                                Crie exemplos práticos de aplicação das personas também. Como essa persona interage? Que decisões toma? Como é a comunicação dela? Que tipos de post ela faria? Como ela escreve?'''
+                    
+                    pre_brand_persona_output = modelo_planejamento.generate_content(prompt_brand_persona).text
+                    
+                    # Refinar brand persona
+                    prompt_refinar_brand_persona = f'''Considere a seguinte Brand Persona, faça com que ela seja uma pessoa que realmente represente a marca, aproxime-a de uma persona que representa a marca {nome_cliente}, ela não deve ser um buyer persona, ela deve ser um brand persona, aproxime-a do conceito de BRAND PERSONA: {pre_brand_persona_output}.                                     
+                    -apresente demonstração de escuta ativa ou dados primários que justifiquem as escolhas estratégicas. Traga dores que não sejam superficiais. aprofunde no "por que" das personas.'''
+                    
+                    brand_persona_output = modelo_planejamento.generate_content(prompt_refinar_brand_persona).text
+                    
+                    # Exemplos de fala
+                    prompt_brand_persona_talk = f'''Com base no brand persona: {brand_persona_output}, redija exemplos de fala para ela'''
+                    brand_persona_talk = modelo_planejamento.generate_content(prompt_brand_persona_talk).text
+                    
+                    resultados['brand_persona'] = brand_persona_output + "\n\n" + brand_persona_talk
+                    
+                    # 8. BUYER PERSONA
+                    st.info("👥 Gerando Buyer Persona...")
+                    
+                    prompt_buyer_persona = f'''
+                    - considerando o que a marca considera como sucesso em ({sucesso}) e os objetivos de marca ({objetivos_de_marca})
+                    
+                    Descrição detalhada de 2 buyer personas considerando o público-alvo: {publico_alvo} e o 
+                                objetivo do plano estratégico como descrito em {intuito_plano} com os seguintes atributos enunciados: 
+                                nome fictício, idade, gênero, classe social, objetivos, vontades, Emoções negativas (o que lhe traz anseio, aflinge, etc), Emoções positivas,
+                                quais são suas dores, quais são suas objeções, quais são seus resultados dos sonhos,
+                                suas metas e objetivos e qual o seu canal favorito (entre facebook, instagram, whatsapp, youtube ou linkedin), em português brasileiro. 
+                                -apresente demonstração de escuta ativa ou dados primários que justifiquem as escolhas estratégicas. Traga dores que não sejam superficiais. aprofunde no "por que" das personas.
+
+                                Crie exemplos práticos de aplicação das personas também. Como essa persona interage? Que decisões toma? Como é a comunicação dela? Que tipos de post ela faria? Como ela escreve?'''
+                    
+                    buyer_persona_output = modelo_planejamento.generate_content(prompt_buyer_persona).text
+                    
+                    # Exemplos de fala
+                    prompt_buyer_persona_talk = f'''Com base no buyer persona: {buyer_persona_output}, redija exemplos de fala para ela.'''
+                    buyer_persona_talk = modelo_planejamento.generate_content(prompt_buyer_persona_talk).text
+                    
+                    resultados['buyer_persona'] = buyer_persona_output + "\n\n" + buyer_persona_talk
+                    
+                    # 9. TOM DE VOZ
+                    st.info("🎤 Gerando Tom de Voz...")
+                    
+                    prompt_tom = f'''Descrição do tom de voz, incluindo nuvem de palavras e palavras proibidas. Levando em conta o ramo de atuação: ({ramo_atuacao}), o brand persona: ({brand_persona_output})
+                    e o buyer persona: ({buyer_persona_output}).
+                                Retorne 5 adjetivos que definem o tom com suas respectivas explicações. ex: tom é amigavel, para transparecer uma 
+                                relação de confiança com frases de exemplo de aplicação do tom em português brasileiro.
+                                
+                                
+                                Crie exemplos práticos do tom de voz proposto. Você está aqui para substituir o trabalho dos redatores.
+                                
+                                Me diga também contra exemplos do tom de voz; Me mostre como ele não deve se comunicar.
+                                
+                                - Não seja genérico. Traga impacto no seu retorno. Você está aqui para direcionar o trabalho da equipe.'''
+                    
+                    tom_output = modelo_planejamento.generate_content(prompt_tom).text
+                    resultados['tom_voz'] = tom_output
+                    
+                    # EXIBIR RESULTADOS
+                    st.success("✅ Planejamento estratégico concluído com sucesso!")
+                    
+                    # Criar abas para os resultados
+                    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+                        "📋 Pesquisa de Mercado", 
+                        "🟡 Golden Circle", 
+                        "🎯 Posicionamento", 
+                        "👤 Brand Persona", 
+                        "👥 Buyer Persona", 
+                        "🎤 Tom de Voz",
+                        "📊 Resumo",
+                        "💾 Exportar"
+                    ])
+                    
+                    with tab1:
+                        st.header("1. Etapa de Pesquisa de Mercado")
+                        
+                        st.subheader("1.1 Análise SWOT - Avaliada")
+                        st.markdown(resultados['SWOT'])
+                        
+                        st.subheader("1.2 Análise PEST - Avaliada")
+                        st.markdown(resultados['PEST'])
+                        
+                        st.subheader("1.3 Análise de Concorrência")
+                        st.markdown(resultados['concorrencia'])
+                    
+                    with tab2:
+                        st.header("2.1 Golden Circle")
+                        st.markdown(resultados['golden'])
+                    
+                    with tab3:
+                        st.header("2.2 Posicionamento de Marca")
+                        st.markdown(resultados['posicionamento'])
+                    
+                    with tab4:
+                        st.header("2.3 Brand Persona")
+                        st.markdown(resultados['brand_persona'])
+                    
+                    with tab5:
+                        st.header("2.4 Buyer Persona")
+                        st.markdown(resultados['buyer_persona'])
+                    
+                    with tab6:
+                        st.header("2.5 Tom de Voz")
+                        st.markdown(resultados['tom_voz'])
+                    
+                    with tab7:
+                        st.header("📊 Resumo Executivo")
+                        
+                        # Criar resumo consolidado
+                        prompt_resumo = f'''
+                        Com base nas análises realizadas, crie um resumo executivo do planejamento estratégico para {nome_cliente}:
+                        
+                        CLIENTE: {nome_cliente}
+                        RAMO: {ramo_atuacao}
+                        OBJETIVO: {intuito_plano}
+                        
+                        ANÁLISES REALIZADAS:
+                        1. SWOT: {resultados['SWOT'][:500]}...
+                        2. PEST: {resultados['PEST'][:500]}...
+                        3. GOLDEN CIRCLE: {resultados['golden']}
+                        4. POSICIONAMENTO: {resultados['posicionamento'][:500]}...
+                        
+                        Crie um resumo executivo que destaque:
+                        - Principais oportunidades identificadas
+                        - Principais ameaças/desafios
+                        - Estratégia central recomendada
+                        - Próximos passos prioritários
+                        
+                        Formato: Tópicos claros e objetivos, máximo 1 página.
+                        '''
+                        
+                        resumo_executivo = modelo_planejamento.generate_content(prompt_resumo).text
+                        st.markdown(resumo_executivo)
+                        
+                        # Métricas chave
+                        col_met1, col_met2, col_met3, col_met4 = st.columns(4)
+                        with col_met1:
+                            st.metric("📊 Análises", "6 completas")
+                        with col_met2:
+                            st.metric("🔍 Pesquisas", "5 áreas")
+                        with col_met3:
+                            st.metric("👥 Personas", "4 criadas")
+                        with col_met4:
+                            st.metric("🎯 Objetivos", objetivos_de_marca[:20] + "...")
+                    
+                    with tab8:
+                        st.header("💾 Exportar Planejamento")
+                        
+                        # Criar documento consolidado
+                        documento_completo = f"""
+                        # 📊 PLANEJAMENTO ESTRATÉGICO - {nome_cliente}
+                        
+                        **Data:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}
+                        **Cliente:** {nome_cliente}
+                        **Ramo:** {ramo_atuacao}
+                        **Objetivo:** {intuito_plano}
+                        **Público-alvo:** {publico_alvo}
+                        
+                        ---
+                        
+                        ## 1. ETAPA DE PESQUISA DE MERCADO
+                        
+                        ### 1.1 Análise SWOT
+                        {resultados['SWOT']}
+                        
+                        ### 1.2 Análise PEST
+                        {resultados['PEST']}
+                        
+                        ### 1.3 Análise de Concorrência
+                        {resultados['concorrencia']}
+                        
+                        ---
+                        
+                        ## 2. ETAPA ESTRATÉGICA
+                        
+                        ### 2.1 Golden Circle
+                        {resultados['golden']}
+                        
+                        ### 2.2 Posicionamento de Marca
+                        {resultados['posicionamento']}
+                        
+                        ### 2.3 Brand Persona
+                        {resultados['brand_persona']}
+                        
+                        ### 2.4 Buyer Persona
+                        {resultados['buyer_persona']}
+                        
+                        ### 2.5 Tom de Voz
+                        {resultados['tom_voz']}
+                        
+                        ---
+                        
+                        ## 📋 INFORMAÇÕES DO CLIENTE
+                        
+                        **Site:** {site_cliente if site_cliente else 'Não informado'}
+                        **Referência da marca:** {referencia_da_marca}
+                        **Objetivos de marca:** {objetivos_de_marca}
+                        **Definição de sucesso:** {sucesso}
+                        **Concorrentes:** {concorrentes if concorrentes else 'Não informados'}
+                        
+                        ---
+                        
+                        *Planejamento gerado automaticamente pelo Sistema Agente BD*
+                        """
+                        
+                        # Botões de download
+                        col_dl1, col_dl2 = st.columns(2)
+                        
+                        with col_dl1:
+                            st.download_button(
+                                "📄 Baixar TXT Completo",
+                                data=documento_completo,
+                                file_name=f"planejamento_{nome_cliente}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                                mime="text/plain",
+                                key="download_txt"
+                            )
+                        
+                        with col_dl2:
+                            st.download_button(
+                                "📋 Baixar Resumo Executivo",
+                                data=resumo_executivo,
+                                file_name=f"resumo_{nome_cliente}_{datetime.datetime.now().strftime('%Y%m%d')}.txt",
+                                mime="text/plain",
+                                key="download_resumo"
+                            )
+                        
+                        # Botão para salvar no MongoDB
+                        if st.button("💾 Salvar no Banco de Dados", type="primary"):
+                            salvo = save_to_mongo_MKT(
+                                resultados['SWOT'],
+                                resultados['PEST'],
+                                resultados['concorrencia'],
+                                resultados['golden'],
+                                resultados['posicionamento'],
+                                resultados['brand_persona'],
+                                resultados['buyer_persona'],
+                                resultados['tom_voz'],
+                                nome_cliente
+                            )
+                            
+                            if salvo:
+                                st.balloons()
+                
+                except Exception as e:
+                    st.error(f"❌ Erro durante o planejamento estratégico: {str(e)}")
+                    st.info("💡 Tente novamente com informações mais específicas ou verifique sua conexão com a API do Gemini.")
