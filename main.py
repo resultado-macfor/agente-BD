@@ -4876,7 +4876,7 @@ with tab_mapping["✨ Geração de Conteúdo"]:
             mensagem_sistema = contexto_agente if contexto_agente else "Você é um assistente de pesquisa que fornece informações precisas e atualizadas COM FONTES."
             
             data = {
-                "model": "sonar-pro",
+                "model": "sonar",
                 "messages": [
                     {
                         "role": "system",
@@ -8726,13 +8726,7 @@ with tab_mapping["📱 Planejamento de Mídias"]:
                             placeholder="@nomedeusuario",
                             key="tiktok_perfil")
     
-    # Referências criativas
-    st.markdown("### 🎨 Referências Criativas (opcional)")
-    
-    ref_files = st.file_uploader("Arquivos de referência (imagens, vídeos, PDFs):", 
-                                type=["jpg", "jpeg", "png", "mp4", "pdf", "mov"],
-                                accept_multiple_files=True,
-                                key="ref_files_midias")
+   
     
     # Botão para iniciar planejamento
     if st.button("🚀 Gerar Planejamento de Mídias", type="primary", use_container_width=True, key="iniciar_midias"):
