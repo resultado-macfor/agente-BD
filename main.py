@@ -980,72 +980,7 @@ with tab_mapping["💬 Chat"]:
     else:
         st.sidebar.success(f"✅ {modelo_chat} ativo")
     
-    # Controles de navegação no topo
-    col1, col2, col3 = st.columns([1, 1, 1])
     
-    with col1:
-        if st.button("📚 Carregar Histórico", key="carregar_historico"):
-            st.session_state.show_historico = not st.session_state.show_historico
-            st.rerun()
-    
-    with col2:
-        if st.button("🔄 Limpar Chat", key="limpar_chat"):
-            st.session_state.messages = []
-            if hasattr(st.session_state, 'historico_contexto'):
-                st.session_state.historico_contexto = []
-            st.success("Chat limpo!")
-            st.rerun()
-    
-    with col3:
-        if st.button("🔁 Trocar Agente", key="trocar_agente_chat"):
-            st.session_state.agente_selecionado = None
-            st.session_state.messages = []
-            st.session_state.historico_contexto = []
-            st.rerun()
-    
-    # Mostrar se há histórico carregado
-    if hasattr(st.session_state, 'historico_contexto') and st.session_state.historico_contexto:
-        st.info(f"📖 Usando histórico anterior com {len(st.session_state.historico_contexto)} mensagens como contexto")
-    
-    # Modal para seleção de histórico
-    if st.session_state.show_historico:
-        with st.expander("📚 Selecionar Histórico de Conversa", expanded=True):
-            conversas_anteriores = obter_conversas(agente['_id'])
-            
-            if conversas_anteriores:
-                for i, conversa in enumerate(conversas_anteriores[:10]):  # Últimas 10 conversas
-                    col_hist1, col_hist2, col_hist3 = st.columns([3, 1, 1])
-                    
-                    with col_hist1:
-                        # CORREÇÃO: Usar get() para evitar KeyError
-                        data_display = conversa.get('data_formatada', conversa.get('data', 'Data desconhecida'))
-                        mensagens_count = len(conversa.get('mensagens', []))
-                        st.write(f"**{data_display}** - {mensagens_count} mensagens")
-                    
-                    with col_hist2:
-                        if st.button("👀 Visualizar", key=f"ver_{i}"):
-                            st.session_state.conversa_visualizada = conversa.get('mensagens', [])
-                    
-                    with col_hist3:
-                        if st.button("📥 Usar", key=f"usar_{i}"):
-                            st.session_state.messages = conversa.get('mensagens', [])
-                            st.session_state.historico_contexto = conversa.get('mensagens', [])
-                            st.session_state.show_historico = False
-                            st.success(f"✅ Histórico carregado: {len(conversa.get('mensagens', []))} mensagens")
-                            st.rerun()
-                
-                # Visualizar conversa selecionada
-                if hasattr(st.session_state, 'conversa_visualizada'):
-                    st.subheader("👀 Visualização do Histórico")
-                    for msg in st.session_state.conversa_visualizada[-6:]:  # Últimas 6 mensagens
-                        with st.chat_message(msg.get("role", "user")):
-                            st.markdown(msg.get("content", ""))
-                    
-                    if st.button("Fechar Visualização", key="fechar_visualizacao"):
-                        st.session_state.conversa_visualizada = None
-                        st.rerun()
-            else:
-                st.info("Nenhuma conversa anterior encontrada")
     
     # Mostrar informações de herança se aplicável
     if 'agente_mae_id' in agente and agente['agente_mae_id']:
