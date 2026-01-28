@@ -334,7 +334,7 @@ def check_hashes(password, hashed_text):
 # Dados de usuário (em produção, isso deve vir de um banco de dados seguro)
 users_db = {
     "admin": {
-        "password": make_hashes("senha1234"),
+        "password": make_hashes("MacforIA2026@"),
         "squad": "admin",
         "nome": "Administrador"
     }
